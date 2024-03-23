@@ -8,6 +8,8 @@ Also see [dummy](dummy.html) and [the sample](markdown_sample.html).
 id: foo
 status: draft
 blub: 42
+tag: mayhem
+tag: flubber
 ```
 
 A metadata block is out of spec?

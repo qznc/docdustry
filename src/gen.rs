@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 struct Doc {
     title: String,
     out_path: PathBuf,
+    links: Vec<String>,
 }
 
 pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
@@ -105,6 +106,7 @@ fn gen_markdown(file: &Path, output_dir: &PathBuf) -> Result<Doc, std::io::Error
     Ok(Doc {
         title: meta_info.title,
         out_path: out_path.strip_prefix(output_dir).unwrap().to_path_buf(),
+        links: meta_info.links,
     })
 }
 
@@ -136,6 +138,10 @@ struct DocMetaInfo {
     title: String,
     id: String,
     status: String,
+
+    #[serde(skip)]
+    links: Vec<String>,
+    tags: Vec<String>,
 }
 
 impl DocMetaInfo {
@@ -144,6 +150,8 @@ impl DocMetaInfo {
             title: String::new(),
             id: String::new(),
             status: String::new(),
+            links: vec![],
+            tags: vec![],
         }
     }
     fn parse_meta(&mut self, meta: String) {
@@ -155,6 +163,9 @@ impl DocMetaInfo {
                     }
                     "id" => {
                         self.id = v.trim().to_string();
+                    }
+                    "tag" => {
+                        self.tags.push(v.trim().to_string());
                     }
                     _ => (),
                 }
@@ -188,6 +199,14 @@ fn parse_meta_info(mut parser: Parser<'_>) -> DocMetaInfo {
                     if let Some(Event::Text(t)) = parser.next() {
                         ret.parse_meta(t.to_string());
                     }
+                }
+                Tag::Link {
+                    link_type: _,
+                    dest_url,
+                    title: _,
+                    id: _,
+                } => {
+                    ret.links.push(dest_url.to_string());
                 }
                 _ => (), // don't care
             },
