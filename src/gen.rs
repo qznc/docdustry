@@ -14,6 +14,7 @@ struct Doc {
     title: String,
     out_path: PathBuf,
     links: Vec<String>,
+    id: String,
 }
 
 pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
@@ -96,17 +97,24 @@ const JS: &'static [u8] = include_bytes!("default.js");
 fn gen_markdown(file: &Path, output_dir: &PathBuf) -> Result<Doc, std::io::Error> {
     // generate HTML
     let markdown_content = read_to_string(file)?;
-    let meta_info = parse_meta_info(Parser::new(&markdown_content));
+    let mut meta_info = parse_meta_info(Parser::new(&markdown_content));
     let mut html_output = String::new();
     push_html(&mut html_output, Parser::new(&markdown_content));
 
     // generate file
     let out_path = create_output_file(file, output_dir)?;
+    meta_info.id = if meta_info.id.is_empty() {
+        let hash = md5::compute(&out_path.to_str().unwrap());
+        format!("did:{:x}", hash)
+    } else {
+        meta_info.id
+    };
     write_html(File::create(&out_path)?, html_output, &meta_info)?;
     Ok(Doc {
         title: meta_info.title,
         out_path: out_path.strip_prefix(output_dir).unwrap().to_path_buf(),
         links: meta_info.links,
+        id: meta_info.id,
     })
 }
 
@@ -147,7 +155,7 @@ struct DocMetaInfo {
 impl DocMetaInfo {
     fn new() -> DocMetaInfo {
         DocMetaInfo {
-            title: String::new(),
+            title: "<unknown>".to_string(),
             id: String::new(),
             status: String::new(),
             links: vec![],
@@ -206,6 +214,9 @@ fn parse_meta_info(mut parser: Parser<'_>) -> DocMetaInfo {
                     title: _,
                     id: _,
                 } => {
+                    if dest_url.starts_with(&"https://") || dest_url.starts_with(&"http://") {
+                        continue;
+                    }
                     ret.links.push(dest_url.to_string());
                 }
                 _ => (), // don't care
