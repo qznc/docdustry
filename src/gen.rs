@@ -14,6 +14,8 @@ struct Doc {
     title: String,
     out_path: PathBuf,
     links: Vec<String>,
+    tags: Vec<String>,
+    url: String,
     id: String,
 }
 
@@ -102,7 +104,8 @@ fn gen_markdown(file: &Path, output_dir: &PathBuf) -> Result<Doc, std::io::Error
     push_html(&mut html_output, Parser::new(&markdown_content));
 
     // generate file
-    let out_path = create_output_file(file, output_dir)?;
+    let html_path = html_path(file);
+    let out_path = create_output_file(&html_path, output_dir)?;
     meta_info.id = if meta_info.id.is_empty() {
         let hash = md5::compute(&out_path.to_str().unwrap());
         format!("did:{:x}", hash)
@@ -110,11 +113,14 @@ fn gen_markdown(file: &Path, output_dir: &PathBuf) -> Result<Doc, std::io::Error
         meta_info.id
     };
     write_html(File::create(&out_path)?, html_output, &meta_info)?;
+    let url = Path::new("..").join(&html_path);
     Ok(Doc {
         title: meta_info.title,
         out_path: out_path.strip_prefix(output_dir).unwrap().to_path_buf(),
         links: meta_info.links,
+        tags: meta_info.tags,
         id: meta_info.id,
+        url: url.to_str().unwrap().to_string(),
     })
 }
 
@@ -130,14 +136,17 @@ fn write_html(fh: File, html: String, meta_info: &DocMetaInfo) -> Result<(), std
     Ok(())
 }
 
-fn create_output_file(file: &Path, output_dir: &PathBuf) -> Result<PathBuf, std::io::Error> {
-    let dir_hash = generate_short_hash(file.parent().unwrap().to_str().unwrap());
-    let dir = output_dir.join(dir_hash);
-    let basename = file.file_stem().expect("stem").to_str().expect("str");
+fn html_path(md_path: &Path) -> PathBuf {
+    let dir_hash = generate_short_hash(md_path.parent().unwrap().to_str().unwrap());
+    let basename = md_path.file_stem().expect("stem").to_str().expect("str");
     let output_file_name = format!("{}.html", basename);
-    let output_file_path = dir.join(output_file_name);
-    info!("gen_markdown {:?} to {:?}", &file, &output_file_path);
-    create_dir_all(&dir)?;
+    let output_file_path = Path::new(&dir_hash).join(output_file_name);
+    output_file_path
+}
+
+fn create_output_file(html_path: &Path, output_dir: &PathBuf) -> Result<PathBuf, std::io::Error> {
+    let output_file_path = output_dir.join(html_path);
+    create_dir_all(&output_file_path.parent().unwrap())?;
     Ok(output_file_path)
 }
 
@@ -214,7 +223,10 @@ fn parse_meta_info(mut parser: Parser<'_>) -> DocMetaInfo {
                     title: _,
                     id: _,
                 } => {
-                    if dest_url.starts_with(&"https://") || dest_url.starts_with(&"http://") {
+                    if dest_url.starts_with(&"https://")
+                        || dest_url.starts_with(&"http://")
+                        || dest_url.starts_with(&"#")
+                    {
                         continue;
                     }
                     ret.links.push(dest_url.to_string());

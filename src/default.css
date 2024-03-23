@@ -18,6 +18,8 @@ p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
 }
 
 /** LAYOUT **/
+header,
+footer,
 section.main { width: 40em; margin: 1em auto; }
 
 section.main h1,
@@ -38,8 +40,8 @@ section.main blockquote { padding-left: 4px; }
 
 section.main a[href^="//"]::before,
 section.main a[href^="https://"]::before,
-section.main a[href^="http://"]::before { content: '🌐'; opacity: 0.5; }
-section.main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; }
+section.main a[href^="http://"]::before { content: '🌐 '; opacity: 0.5; font-size: 0.8em; }
+section.main a[href^="mailto:"]::before { content: '📧 '; opacity: 0.5; font-size: 0.8em; }
 
 footer,
 header { height: calc(2*var(--base-line-height)); }
@@ -50,9 +52,17 @@ section.main pre { background-color: #eee; }
 
 section.main blockquote { border-left: 1em solid #eee; }
 
+section.main a { text-decoration: underline; }
+section.main a:hover { text-decoration: none; }
+
 /** FONTS **/
 body { font-size: var(--base-font-size); line-height: var(--base-line-height); }
-pre>code { font-size: 0.7em; }
+h1 { font-size: 1.9em; font-weight: normal; }
+h2 { font-size: 1.7em; font-weight: normal; }
+h3 { font-size: 1.1em; }
+h4 { font-size: 1.0em; }
+h5 { font-size: 0.9em; }
+h6 { font-weight: normal; }
 h1, h2, h3 { line-height: calc(2*var(--base-line-height)); }
 body { font-family: Seravek, 'Gill Sans Nova', Ubuntu, Calibri, 'DejaVu Sans', source-sans-pro, sans-serif; }
 code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
@@ -61,9 +71,10 @@ section.main { font-variant-numeric: oldstyle-nums slashed-zero; }
 
 /** DEBUGGING **/
 
-/* Create repeating lines with 16px spacing */
+/* Create repeating lines with 16px spacing
 body { background-image: repeating-linear-gradient(to bottom,
           transparent,
           transparent 25px,
           #eee 25px,
           #eee 26px);
+*/
