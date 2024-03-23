@@ -3,12 +3,26 @@ use log::{error, info};
 use md5;
 use pulldown_cmark::html::push_html;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Parser, Tag};
+use serde_json;
 use std::fs::{self, create_dir_all, read_to_string, File};
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 
+#[derive(serde::Serialize)]
+struct Doc {
+    title: String,
+    out_path: PathBuf,
+}
+
 pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
+    let mut docs: Vec<Doc> = vec![];
+    parse_md_and_write(sources, &output, &mut docs);
+    write_static_files(&output).unwrap();
+    write_globals_file(&output, docs).unwrap();
+}
+
+fn parse_md_and_write(sources: PathBuf, output: &PathBuf, docs: &mut Vec<Doc>) {
     for result in Walk::new(sources) {
         match result {
             Ok(entry) => {
@@ -21,14 +35,32 @@ pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
                     continue;
                 }
                 info!("found {}", entry.path().display());
-                if let Err(e) = gen_markdown(p, &output) {
-                    error!("Markdown generation failed: {}", e);
+                match gen_markdown(p, output) {
+                    Err(e) => error!("Markdown generation failed: {}", e),
+                    Ok(doc) => docs.push(doc),
                 }
             }
-            Err(err) => error!("ERROR: {}", err),
+            Err(err) => error!("Not an entry: {}", err),
         }
     }
-    write_static_files(&output).ok();
+}
+
+fn write_globals_file(output_dir: &PathBuf, docs: Vec<Doc>) -> Result<(), std::io::Error> {
+    let mut c = String::new();
+    c.push_str("const DOCDUSTRY_GLOBALS = {");
+
+    // doc data
+    c.push_str("docs:[\n");
+    for doc in docs {
+        c.push_str(&serde_json::to_string(&doc)?);
+        c.push_str(",\n");
+    }
+    c.push_str("],");
+
+    c.push_str("};");
+    let path = output_dir.join("docdustry_static/globals.js");
+    fs::write(path, c)?;
+    Ok(())
 }
 
 fn write_static_files(output_dir: &PathBuf) -> Result<(), std::io::Error> {
@@ -49,8 +81,8 @@ const TMPL: [&'static str; 4] = [
 <link href="../docdustry_static/default.css" rel="stylesheet">
 <script src="../docdustry_static/default.js" type="text/javascript" defer></script>
 <script src="../docdustry_static/globals.js" type="text/javascript" defer></script>
-<script type="text/javascript">val DOCDUSTRY = {"#,
-    r#"};</script>
+<script type="text/javascript">const DOCDUSTRY_LOCALS = "#,
+    r#";</script>
 <body><header></header>
 <section class="main">"#,
     r#"</section>
@@ -60,7 +92,7 @@ const CSS: &'static [u8] = include_bytes!("default.css");
 const JS: &'static [u8] = include_bytes!("default.js");
 
 /// Read contents of file, convert Markdown to HTML, and store as html file in output directory
-fn gen_markdown(file: &Path, output_dir: &PathBuf) -> Result<(), std::io::Error> {
+fn gen_markdown(file: &Path, output_dir: &PathBuf) -> Result<Doc, std::io::Error> {
     // generate HTML
     let markdown_content = read_to_string(file)?;
     let meta_info = parse_meta_info(Parser::new(&markdown_content));
@@ -68,23 +100,27 @@ fn gen_markdown(file: &Path, output_dir: &PathBuf) -> Result<(), std::io::Error>
     push_html(&mut html_output, Parser::new(&markdown_content));
 
     // generate file
-    let fh = create_output_file(file, output_dir)?;
-    write_html(fh, html_output, meta_info)
+    let out_path = create_output_file(file, output_dir)?;
+    write_html(File::create(&out_path)?, html_output, &meta_info)?;
+    Ok(Doc {
+        title: meta_info.title,
+        out_path: out_path.strip_prefix(output_dir).unwrap().to_path_buf(),
+    })
 }
 
-fn write_html(fh: File, html_output: String, meta_info: DocMetaInfo) -> Result<(), std::io::Error> {
+fn write_html(fh: File, html: String, meta_info: &DocMetaInfo) -> Result<(), std::io::Error> {
     let mut st = BufWriter::new(fh);
     st.write(TMPL[0].as_bytes())?;
     st.write(meta_info.title.as_bytes())?;
     st.write(TMPL[1].as_bytes())?;
-    // TODO: inject meta info for js use
+    st.write(serde_json::to_string(&meta_info)?.as_bytes())?;
     st.write(TMPL[2].as_bytes())?;
-    st.write(html_output.as_bytes())?;
+    st.write(html.as_bytes())?;
     st.write(TMPL[3].as_bytes())?;
     Ok(())
 }
 
-fn create_output_file(file: &Path, output_dir: &PathBuf) -> Result<File, std::io::Error> {
+fn create_output_file(file: &Path, output_dir: &PathBuf) -> Result<PathBuf, std::io::Error> {
     let dir_hash = generate_short_hash(file.parent().unwrap().to_str().unwrap());
     let dir = output_dir.join(dir_hash);
     let basename = file.file_stem().expect("stem").to_str().expect("str");
@@ -92,30 +128,44 @@ fn create_output_file(file: &Path, output_dir: &PathBuf) -> Result<File, std::io
     let output_file_path = dir.join(output_file_name);
     info!("gen_markdown {:?} to {:?}", &file, &output_file_path);
     create_dir_all(&dir)?;
-    let fh = File::create(output_file_path)?;
-    Ok(fh)
+    Ok(output_file_path)
 }
 
+#[derive(serde::Serialize)]
 struct DocMetaInfo {
     title: String,
-    meta: String,
+    id: String,
+    status: String,
 }
 
 impl DocMetaInfo {
-    pub fn is_complete(&self) -> bool {
-        !self.title.is_empty() && !self.meta.is_empty()
+    fn new() -> DocMetaInfo {
+        DocMetaInfo {
+            title: String::new(),
+            id: String::new(),
+            status: String::new(),
+        }
+    }
+    fn parse_meta(&mut self, meta: String) {
+        for line in meta.split("\n") {
+            if let Some((k, v)) = line.split_once(":") {
+                match k {
+                    "status" => {
+                        self.status = v.trim().to_string();
+                    }
+                    "id" => {
+                        self.id = v.trim().to_string();
+                    }
+                    _ => (),
+                }
+            }
+        }
     }
 }
 
 fn parse_meta_info(mut parser: Parser<'_>) -> DocMetaInfo {
-    let mut ret = DocMetaInfo {
-        title: String::new(),
-        meta: String::new(),
-    };
+    let mut ret = DocMetaInfo::new();
     while let Some(event) = parser.next() {
-        if ret.is_complete() {
-            break;
-        }
         match event {
             Event::Start(tag) => match tag {
                 Tag::Heading {
@@ -136,7 +186,7 @@ fn parse_meta_info(mut parser: Parser<'_>) -> DocMetaInfo {
                         continue;
                     }
                     if let Some(Event::Text(t)) = parser.next() {
-                        ret.meta = t.to_string();
+                        ret.parse_meta(t.to_string());
                     }
                 }
                 _ => (), // don't care

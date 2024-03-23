@@ -2,7 +2,7 @@
 
 Hello *World*!
 
-Also see [dummy](dummy.html).
+Also see [dummy](dummy.html) and [the sample](markdown_sample.html).
 
 ```docdustry-docmeta
 id: foo
