@@ -1,7 +1,7 @@
 use ignore::Walk;
 use log::{error, info};
-use pulldown_cmark::{html::push_html, Parser};
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Tag};
+use pulldown_cmark::Parser;
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Tag, TagEnd};
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 use std::io::{self, BufWriter};
@@ -9,13 +9,14 @@ use std::path::PathBuf;
 
 #[derive(serde::Serialize)]
 pub struct Doc {
+    /// document ID, the unique identifier for linking to it
+    pub did: String,
     pub title: String,
     pub status: String,
     pub links: Vec<String>,
     pub tags: Vec<String>,
+    pub url: String,
 
-    /// document ID, the unique identifier for linking to it
-    pub did: String,
     #[serde(skip)]
     html: String,
     #[serde(skip)]
@@ -29,55 +30,78 @@ impl Doc {
         Doc {
             src_path_rel,
             src_path_base: src_path_base.to_path_buf(),
-            html: String::with_capacity(1000),
+            html: String::with_capacity(4000),
             title: "<unknown>".to_string(),
             links: vec![],
             tags: vec![],
             did: String::new(),
             status: String::new(),
+            url: String::new(),
         }
     }
 
     fn gen_html(&mut self) -> Result<(), io::Error> {
         let file = self.src_path_base.join(&self.src_path_rel);
         let markdown_content = read_to_string(file)?;
-        self.parse_meta_data(Parser::new(&markdown_content));
+        self.parse_md(Parser::new(&markdown_content));
         // TODO: for inlining other pages we to track dependencies
-        push_html(&mut self.html, Parser::new(&markdown_content));
         Ok(())
     }
 
-    fn parse_meta_data(&mut self, mut parser: Parser) {
+    fn parse_md(&mut self, mut parser: Parser) {
         while let Some(event) = parser.next() {
             match event {
                 Event::Start(tag) => match tag {
                     Tag::Heading {
                         level,
-                        id: _,
+                        id,
                         classes: _,
                         attrs: _,
                     } => {
-                        if level != HeadingLevel::H1 {
-                            continue;
+                        self.html.push('<');
+                        self.html.push_str(&level.to_string());
+                        if let Some(s) = id {
+                            self.html.push_str(&" id=\"");
+                            self.html.push_str(&s);
+                            self.html.push('"');
                         }
-                        if let Some(Event::Text(t)) = parser.next() {
-                            self.title = t.to_string();
+                        self.html.push('>');
+                        if level == HeadingLevel::H1 {
+                            if let Some(Event::Text(t)) = parser.next() {
+                                self.html.push_str(&t);
+                                self.title = t.to_string();
+                            }
                         }
                     }
-                    Tag::CodeBlock(CodeBlockKind::Fenced(lang)) => {
-                        if lang != CowStr::from("docdustry-docmeta") {
-                            continue;
+                    Tag::CodeBlock(kind) => match kind {
+                        CodeBlockKind::Indented => self.html.push_str(&"<pre><code>"),
+                        CodeBlockKind::Fenced(lang) => {
+                            self.html.push_str(&"<pre><code>");
+                            if lang != CowStr::from("docdustry-docmeta") {
+                                continue;
+                            }
+                            if let Some(Event::Text(t)) = parser.next() {
+                                self.parse_meta(t.to_string());
+                            }
                         }
-                        if let Some(Event::Text(t)) = parser.next() {
-                            self.parse_meta(t.to_string());
-                        }
-                    }
+                    },
                     Tag::Link {
                         link_type: _,
                         dest_url,
-                        title: _,
-                        id: _,
+                        title,
+                        id,
                     } => {
+                        self.html.push_str(&format!(r#"<a href="{}">"#, dest_url));
+                        if !id.is_empty() {
+                            self.html.push_str(&" id=\"");
+                            self.html.push_str(&id);
+                            self.html.push('"');
+                        }
+                        if !title.is_empty() {
+                            self.html.push_str(&" title=\"");
+                            self.html.push_str(&title);
+                            self.html.push('"');
+                        }
                         if dest_url.starts_with(&"https://")
                             || dest_url.starts_with(&"http://")
                             || dest_url.starts_with(&"#")
@@ -86,9 +110,61 @@ impl Doc {
                         }
                         self.links.push(dest_url.to_string());
                     }
-                    _ => (), // don't care
+                    Tag::Paragraph => self.html.push_str(&"<p>"),
+                    Tag::BlockQuote => self.html.push_str(&"<blockquote>"),
+                    Tag::HtmlBlock => self.html.push_str(&"<div html>"),
+                    Tag::List(first) => match first {
+                        Some(_start_num) => self.html.push_str(&"<ol>"),
+                        None => self.html.push_str(&"<ul>"),
+                    },
+                    Tag::Item => self.html.push_str(&"<li>"),
+                    Tag::FootnoteDefinition(_) => todo!(),
+                    Tag::Table(_) => todo!(),
+                    Tag::TableHead => self.html.push_str(&"<th>"),
+                    Tag::TableRow => self.html.push_str(&"<tr>"),
+                    Tag::TableCell => self.html.push_str(&"<td>"),
+                    Tag::Emphasis => self.html.push_str(&"<em>"),
+                    Tag::Strong => self.html.push_str(&"<strong>"),
+                    Tag::Strikethrough => self.html.push_str(&"<span strikethrough>"),
+                    Tag::Image {
+                        link_type,
+                        dest_url,
+                        title,
+                        id,
+                    } => self
+                        .html
+                        .push_str(&format!(r#"<img src="{}" title="{}">"#, dest_url, title)),
+                    Tag::MetadataBlock(_) => todo!(),
                 },
-                _ => (), // don't care
+                Event::End(tag) => match tag {
+                    TagEnd::Paragraph => self.html.push_str(&"</p>"),
+                    TagEnd::Heading(level) => self.html.push_str(&format!("</{}>", level)),
+                    TagEnd::BlockQuote => self.html.push_str(&"</blockquote>"),
+                    TagEnd::CodeBlock => self.html.push_str(&"</pre></code>"),
+                    TagEnd::HtmlBlock => self.html.push_str(&"</div>"),
+                    TagEnd::List(_) => self.html.push_str(&"</ul>"),
+                    TagEnd::Item => self.html.push_str(&"</li>"),
+                    TagEnd::FootnoteDefinition => todo!(),
+                    TagEnd::Table => self.html.push_str(&"</table>"),
+                    TagEnd::TableHead => self.html.push_str(&"</th>"),
+                    TagEnd::TableRow => self.html.push_str(&"</tr>"),
+                    TagEnd::TableCell => self.html.push_str(&"</td>"),
+                    TagEnd::Emphasis => self.html.push_str(&"</em>"),
+                    TagEnd::Strong => self.html.push_str(&"</strong>"),
+                    TagEnd::Strikethrough => self.html.push_str(&"</span>"),
+                    TagEnd::Link => self.html.push_str(&"</a>"),
+                    TagEnd::Image => (),
+                    TagEnd::MetadataBlock(_) => todo!(),
+                },
+                Event::Text(t) => self.html.push_str(&t),
+                Event::Code(_) => self.html.push_str(&"<code><pre>"),
+                Event::Html(t) => self.html.push_str(&t),
+                Event::InlineHtml(t) => self.html.push_str(&t),
+                Event::FootnoteReference(_) => todo!(),
+                Event::SoftBreak => self.html.push('\n'),
+                Event::HardBreak => self.html.push_str(&"<br/>"),
+                Event::Rule => self.html.push_str(&"<hr/>"),
+                Event::TaskListMarker(_) => todo!(),
             }
         }
         // post-processing
@@ -99,6 +175,7 @@ impl Doc {
             let hash = ctx.compute();
             self.did = format!("{:x}", hash);
         }
+        self.url = self.rel_url();
     }
 
     fn parse_meta(&mut self, meta: String) {
@@ -123,25 +200,35 @@ impl Doc {
     pub(crate) fn write_html(&self, st: &mut BufWriter<File>) -> Result<usize, io::Error> {
         st.write(self.html.as_bytes())
     }
-}
 
-fn _out_path_from_src(src_path_rel: &PathBuf) -> PathBuf {
-    let mut out_path_rel = PathBuf::new();
-    let hash = {
-        let hash = md5::compute(src_path_rel.as_os_str().as_encoded_bytes());
+    pub fn shorthash(&self) -> String {
+        let dir = self.src_path_rel.parent().unwrap();
+        let hash = md5::compute(dir.as_os_str().as_encoded_bytes());
         let hex_string = format!("{:x}", hash);
         let short_hash = &hex_string[..6];
         short_hash.to_string()
-    };
-    out_path_rel.push(hash);
-    let basename = src_path_rel
-        .file_stem()
-        .expect("stem")
-        .to_str()
-        .expect("str");
-    let out_file_name = format!("{}.html", basename);
-    out_path_rel.push(out_file_name);
-    out_path_rel
+    }
+
+    pub fn rel_url(&self) -> String {
+        let mut rel_url = PathBuf::new();
+        rel_url.push("..");
+        rel_url.push(self.html_path());
+        rel_url.to_string_lossy().to_string()
+    }
+
+    pub(crate) fn html_path(&self) -> PathBuf {
+        let mut out_path_rel = PathBuf::new();
+        out_path_rel.push(self.shorthash());
+        let basename = self
+            .src_path_rel
+            .file_stem()
+            .expect("stem")
+            .to_str()
+            .expect("str");
+        let out_file_name = format!("{}.html", basename);
+        out_path_rel.push(out_file_name);
+        out_path_rel
+    }
 }
 
 struct HtmlConverter {

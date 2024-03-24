@@ -19,7 +19,7 @@ pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
 
 fn write_html_doc(output_dir: &PathBuf, d: &Doc) -> Result<(), std::io::Error> {
     // generate file
-    let html_path = html_path(&d.src_path_rel);
+    let html_path = d.html_path();
     let out_path = create_output_file(&html_path, output_dir)?;
     let fh = File::create(&out_path)?;
     let mut st = BufWriter::new(fh);

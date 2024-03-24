@@ -20,13 +20,17 @@ window.addEventListener("load", (event) => {
      // linking via DID
      const main = document.querySelector('section.main');
      main.querySelectorAll("a[href]").forEach(function(e) {
-          const did = e.href;
+          var did = e.href;
           if (! did.startsWith("did:")) return;
-          for (var j=0, len_j=DOCDUSTRY_GLOBALS.docs.length; j<len_j; i++) {
+          did = did.substring(4);
+          console.log("Found did link:", e);
+          for (var j=0, len_j=DOCDUSTRY_GLOBALS.docs.length; j<len_j; j++) {
                const d = DOCDUSTRY_GLOBALS.docs[j];
-               if (d.id == did) {
+               console.log("compare", d.did, "vs", did);
+               if (d.did == did) {
                     e.href = d.url;
                     e.title = d.title;
+                    console.log("Replaced for", d.url);
                     break;
                }
           }
