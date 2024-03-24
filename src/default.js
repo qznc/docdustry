@@ -36,6 +36,45 @@ window.addEventListener("load", (event) => {
           }
      });
 
+     // table of contents
+     {
+         const mainSection = document.querySelector('section.main');
+         const headings = mainSection.querySelectorAll('h1, h2, h3, h4, h5, h6');
+         const tocContainer = document.createElement('section');
+         tocContainer.id = "docdustry-toc";
+         tocContainer.style = "float:right";
+         const tocList = document.createElement('ul');
+         let currentParentList = tocList;
+         let previousLevel = 1;
+
+         headings.forEach((heading) => {
+             const listItem = document.createElement('li');
+             const anchor = document.createElement('a');
+             anchor.textContent = heading.textContent;
+             anchor.href = `#${heading.id}`;
+             listItem.appendChild(anchor);
+
+             const level = parseInt(heading.tagName.charAt(1));
+
+             if (level > previousLevel) {
+                 const sublist = document.createElement('ul');
+                 currentParentList.lastElementChild.appendChild(sublist);
+                 currentParentList = sublist;
+             } else if (level < previousLevel) {
+                 let diff = previousLevel - level;
+                 while (diff > 0) {
+                     currentParentList = currentParentList.parentElement.parentElement;
+                     diff--;
+                 }
+             }
+
+             currentParentList.appendChild(listItem);
+             previousLevel = level;
+         });
+         tocContainer.appendChild(tocList);
+         mainSection.parentElement.insertBefore(tocContainer, mainSection);
+     }
+
      const header = document.querySelector('header');
      header.innerHTML = "<p>The header</p>";
 
