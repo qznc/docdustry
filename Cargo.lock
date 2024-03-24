@@ -156,6 +156,7 @@ dependencies = [
  "log",
  "md5",
  "pulldown-cmark",
+ "pulldown-cmark-escape",
  "serde",
  "serde_json",
 ]

@@ -1,4 +1,3 @@
-use md5;
 use serde_json;
 use std::fs::{self, create_dir_all, File};
 use std::io::prelude::*;
@@ -79,24 +78,8 @@ const TMPL: [&'static str; 4] = [
 const CSS: &'static [u8] = include_bytes!("default.css");
 const JS: &'static [u8] = include_bytes!("default.js");
 
-fn html_path(md_path: &Path) -> PathBuf {
-    let dir_hash = generate_short_hash(md_path.parent().unwrap().to_str().unwrap());
-    let basename = md_path.file_stem().expect("stem").to_str().expect("str");
-    let output_file_name = format!("{}.html", basename);
-    let output_file_path = Path::new(&dir_hash).join(output_file_name);
-    output_file_path
-}
-
 fn create_output_file(html_path: &Path, output_dir: &PathBuf) -> Result<PathBuf, std::io::Error> {
     let output_file_path = output_dir.join(html_path);
     create_dir_all(&output_file_path.parent().unwrap())?;
     Ok(output_file_path)
-}
-
-/// A short hash to avoid conflicts of same file names in different directories
-fn generate_short_hash(input: &str) -> String {
-    let hash = md5::compute(input);
-    let hex_string = format!("{:x}", hash);
-    let short_hash = &hex_string[..6];
-    short_hash.to_string()
 }

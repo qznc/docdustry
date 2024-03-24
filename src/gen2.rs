@@ -2,6 +2,7 @@ use ignore::Walk;
 use log::{error, info};
 use pulldown_cmark::Parser;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Tag, TagEnd};
+use pulldown_cmark_escape::escape_html;
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 use std::io::{self, BufWriter};
@@ -31,7 +32,7 @@ impl Doc {
             src_path_rel,
             src_path_base: src_path_base.to_path_buf(),
             html: String::with_capacity(4000),
-            title: "<unknown>".to_string(),
+            title: String::new(),
             links: vec![],
             tags: vec![],
             did: String::new(),
@@ -69,7 +70,9 @@ impl Doc {
                         if level == HeadingLevel::H1 {
                             if let Some(Event::Text(t)) = parser.next() {
                                 self.html.push_str(&t);
-                                self.title = t.to_string();
+                                if self.title.is_empty() {
+                                    self.title = t.to_string();
+                                }
                             }
                         }
                     }
@@ -82,6 +85,9 @@ impl Doc {
                             }
                             if let Some(Event::Text(t)) = parser.next() {
                                 self.parse_meta(t.to_string());
+                                escape_html(&mut self.html, &t).unwrap();
+                            } else {
+                                todo!();
                             }
                         }
                     },
@@ -114,7 +120,13 @@ impl Doc {
                     Tag::BlockQuote => self.html.push_str(&"<blockquote>"),
                     Tag::HtmlBlock => self.html.push_str(&"<div html>"),
                     Tag::List(first) => match first {
-                        Some(_start_num) => self.html.push_str(&"<ol>"),
+                        Some(start_num) => {
+                            self.html.push_str(&"<ol");
+                            if start_num != 1 {
+                                self.html.push_str(&format!(r#" start="{}""#, start_num));
+                            }
+                            self.html.push('>');
+                        }
                         None => self.html.push_str(&"<ul>"),
                     },
                     Tag::Item => self.html.push_str(&"<li>"),
@@ -125,7 +137,7 @@ impl Doc {
                     Tag::TableCell => self.html.push_str(&"<td>"),
                     Tag::Emphasis => self.html.push_str(&"<em>"),
                     Tag::Strong => self.html.push_str(&"<strong>"),
-                    Tag::Strikethrough => self.html.push_str(&"<span strikethrough>"),
+                    Tag::Strikethrough => self.html.push_str(&"<del>"),
                     Tag::Image {
                         link_type,
                         dest_url,
@@ -142,7 +154,10 @@ impl Doc {
                     TagEnd::BlockQuote => self.html.push_str(&"</blockquote>"),
                     TagEnd::CodeBlock => self.html.push_str(&"</pre></code>"),
                     TagEnd::HtmlBlock => self.html.push_str(&"</div>"),
-                    TagEnd::List(_) => self.html.push_str(&"</ul>"),
+                    TagEnd::List(ordered) => match ordered {
+                        true => self.html.push_str(&"</ol>"),
+                        false => self.html.push_str(&"</ul>"),
+                    },
                     TagEnd::Item => self.html.push_str(&"</li>"),
                     TagEnd::FootnoteDefinition => todo!(),
                     TagEnd::Table => self.html.push_str(&"</table>"),
@@ -151,13 +166,17 @@ impl Doc {
                     TagEnd::TableCell => self.html.push_str(&"</td>"),
                     TagEnd::Emphasis => self.html.push_str(&"</em>"),
                     TagEnd::Strong => self.html.push_str(&"</strong>"),
-                    TagEnd::Strikethrough => self.html.push_str(&"</span>"),
+                    TagEnd::Strikethrough => self.html.push_str(&"</del>"),
                     TagEnd::Link => self.html.push_str(&"</a>"),
                     TagEnd::Image => (),
                     TagEnd::MetadataBlock(_) => todo!(),
                 },
-                Event::Text(t) => self.html.push_str(&t),
-                Event::Code(_) => self.html.push_str(&"<code><pre>"),
+                Event::Text(t) => escape_html(&mut self.html, &t).unwrap(),
+                Event::Code(c) => {
+                    self.html.push_str(&"<code>");
+                    escape_html(&mut self.html, &c).unwrap();
+                    self.html.push_str(&"</code>");
+                }
                 Event::Html(t) => self.html.push_str(&t),
                 Event::InlineHtml(t) => self.html.push_str(&t),
                 Event::FootnoteReference(_) => todo!(),
@@ -174,6 +193,9 @@ impl Doc {
             ctx.consume(&self.title);
             let hash = ctx.compute();
             self.did = format!("{:x}", hash);
+        }
+        if self.title.is_empty() {
+            self.title.push_str(&"<unknown>");
         }
         self.url = self.rel_url();
     }

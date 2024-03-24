@@ -18,8 +18,8 @@ p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
 }
 
 /** LAYOUT **/
-header,
-footer,
+header>*,
+footer>*,
 section.main { width: 40em; margin: 1em auto; }
 
 section.main h1,
@@ -40,8 +40,8 @@ section.main blockquote { padding-left: 4px; }
 
 section.main a[href^="//"]::before,
 section.main a[href^="https://"]::before,
-section.main a[href^="http://"]::before { content: '🌐 '; opacity: 0.5; font-size: 0.8em; }
-section.main a[href^="mailto:"]::before { content: '📧 '; opacity: 0.5; font-size: 0.8em; }
+section.main a[href^="http://"]::before { content: '🌐'; opacity: 0.5; font-size: 0.7em; }
+section.main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-size: 0.8em; }
 
 footer,
 header { height: calc(2*var(--base-line-height)); }
@@ -54,6 +54,9 @@ section.main blockquote { border-left: 1em solid #eee; }
 
 section.main a { text-decoration: underline; }
 section.main a:hover { text-decoration: none; }
+
+header,
+footer { background-color: #aaa; }
 
 /** FONTS **/
 body { font-size: var(--base-font-size); line-height: var(--base-line-height); }
