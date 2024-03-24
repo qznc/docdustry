@@ -3,6 +3,7 @@ use log::error;
 use std::path::PathBuf;
 
 mod gen;
+mod gen2;
 
 #[derive(Parser)]
 struct Cli {
