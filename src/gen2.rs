@@ -90,7 +90,9 @@ impl Doc {
                     Tag::CodeBlock(kind) => match kind {
                         CodeBlockKind::Indented => self.html.push_str(&"<pre><code>"),
                         CodeBlockKind::Fenced(lang) => {
-                            self.html.push_str(&"<pre><code>");
+                            self.html.push_str(&"<pre class=\"language-");
+                            self.html.push_str(&lang);
+                            self.html.push_str(&"\"><code>");
                             if lang != CowStr::from("docdustry-docmeta") {
                                 continue;
                             }
@@ -170,9 +172,12 @@ impl Doc {
                                             continue;
                                         }
                                     };
-                                    self.html.push_str(&r#"<div class="inclusion">"#);
+                                    self.html.push_str(&r#"<article class="inclusion">"#);
+                                    self.html.push_str(&r#"<a class="inclusion" href=""#);
+                                    self.html.push_str(&dest_url);
+                                    self.html.push_str(&"\">inclusion</a>\n");
                                     self.html.push_str(html);
-                                    self.html.push_str(&"</div>\n");
+                                    self.html.push_str(&"</article>\n");
                                     skip_img_rest(&mut parser);
                                 }
                                 None => {
