@@ -1,8 +1,9 @@
 use ignore::Walk;
-use log::{error, info};
+use log::{error, info, warn};
 use pulldown_cmark::Parser;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
+use std::collections::{HashMap, VecDeque};
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 use std::io::{self, BufWriter};
@@ -15,9 +16,12 @@ pub struct Doc {
     pub title: String,
     pub status: String,
     pub links: Vec<String>,
+    pub includes: Vec<String>,
     pub tags: Vec<String>,
     pub url: String,
 
+    #[serde(skip)]
+    raw: String,
     #[serde(skip)]
     html: String,
     #[serde(skip)]
@@ -38,18 +42,25 @@ impl Doc {
             did: String::new(),
             status: String::new(),
             url: String::new(),
+            includes: vec![],
+            raw: String::new(),
         }
     }
 
     fn gen_html(&mut self) -> Result<(), io::Error> {
         let file = self.src_path_base.join(&self.src_path_rel);
-        let markdown_content = read_to_string(file)?;
-        self.parse_md(Parser::new(&markdown_content));
-        // TODO: for inlining other pages we to track dependencies
+        let raw = read_to_string(file)?;
+        self.parse_md(&raw, &None);
+        if !self.includes.is_empty() {
+            // need at least a second run for the inclusion
+            self.html.clear();
+            self.raw = raw;
+        }
         Ok(())
     }
 
-    fn parse_md(&mut self, mut parser: Parser) {
+    fn parse_md(&mut self, raw: &String, include_map: &Option<HashMap<String, String>>) {
+        let mut parser = Parser::new(raw);
         while let Some(event) = parser.next() {
             match event {
                 Event::Start(tag) => match tag {
@@ -139,13 +150,57 @@ impl Doc {
                     Tag::Strong => self.html.push_str(&"<strong>"),
                     Tag::Strikethrough => self.html.push_str(&"<del>"),
                     Tag::Image {
-                        link_type,
+                        link_type: _,
                         dest_url,
                         title,
                         id,
-                    } => self
-                        .html
-                        .push_str(&format!(r#"<img src="{}" title="{}">"#, dest_url, title)),
+                    } => {
+                        if dest_url.starts_with(&"did:") {
+                            // include another page
+                            let did = dest_url[4..].to_string();
+                            match include_map {
+                                Some(m) => {
+                                    let html = match m.get(&did) {
+                                        Some(x) => x,
+                                        None => {
+                                            warn!(
+                                                "Including a DID which does not exist: {}",
+                                                dest_url
+                                            );
+                                            continue;
+                                        }
+                                    };
+                                    self.html.push_str(&r#"<div class="inclusion">"#);
+                                    self.html.push_str(html);
+                                    self.html.push_str(&"</div>\n");
+                                    skip_img_rest(&mut parser);
+                                }
+                                None => {
+                                    self.includes.push(did);
+                                }
+                            };
+                        } else {
+                            // normal image
+                            self.html.push_str(&"<img");
+                            if !dest_url.is_empty() {
+                                self.html.push_str(" src=\"");
+                                self.html.push_str(&dest_url);
+                                self.html.push('"');
+                            }
+                            if !id.is_empty() {
+                                self.html.push_str(" id=\"");
+                                self.html.push_str(&id);
+                                self.html.push('"');
+                            }
+                            if !title.is_empty() {
+                                self.html.push_str(" title=\"");
+                                self.html.push_str(&title);
+                                self.html.push('"');
+                            }
+                            self.html.push('>');
+                            skip_img_rest(&mut parser);
+                        }
+                    }
                     Tag::MetadataBlock(_) => todo!(),
                 },
                 Event::End(tag) => match tag {
@@ -168,7 +223,7 @@ impl Doc {
                     TagEnd::Strong => self.html.push_str(&"</strong>"),
                     TagEnd::Strikethrough => self.html.push_str(&"</del>"),
                     TagEnd::Link => self.html.push_str(&"</a>"),
-                    TagEnd::Image => (),
+                    TagEnd::Image => self.html.push_str(&"</img>"),
                     TagEnd::MetadataBlock(_) => todo!(),
                 },
                 Event::Text(t) => escape_html(&mut self.html, &t).unwrap(),
@@ -253,16 +308,72 @@ impl Doc {
     }
 }
 
+fn skip_img_rest(parser: &mut Parser<'_>) {
+    let n = parser.next();
+    match n {
+        Some(Event::Text(_)) => {
+            let nn = parser.next();
+            match nn {
+                Some(Event::End(TagEnd::Image)) => (),
+                _ => {
+                    todo!("unforeseen: {:?}", n);
+                }
+            }
+        }
+        Some(Event::End(TagEnd::Image)) => (),
+        _ => {
+            todo!("unforeseen: {:?}", n);
+        }
+    }
+}
+
 struct HtmlConverter {
     docs: Vec<Doc>,
+    id2index: HashMap<String, usize>,
+    includes_docs: VecDeque<usize>,
 }
 
 impl HtmlConverter {
     pub fn new() -> HtmlConverter {
-        HtmlConverter { docs: vec![] }
+        HtmlConverter {
+            docs: vec![],
+            includes_docs: VecDeque::new(),
+            id2index: HashMap::new(),
+        }
     }
 
     pub fn read_md_files(&mut self, src_path_base: PathBuf) -> Result<(), io::Error> {
+        self.collect_md_files(src_path_base);
+        self.markdown2html()?;
+        info!("id2index: {:?}", self.id2index);
+        while !self.includes_docs.is_empty() {
+            let i = self.includes_docs.pop_front().unwrap();
+            info!("try with includes: {}", i);
+            let map = self.include_map_if_ready(&self.docs[i]);
+            if map.is_none() {
+                continue;
+            }
+            let ref mut d = self.docs[i];
+            info!("Repeat HTML generation: {}", d.did);
+            info!("With map {:?}", &map);
+            d.parse_md(&d.raw.clone(), &map);
+        }
+        Ok(())
+    }
+
+    fn markdown2html(&mut self) -> Result<(), io::Error> {
+        let mut i: usize = 0;
+        Ok(for d in &mut self.docs {
+            d.gen_html()?;
+            self.id2index.insert(d.did.clone(), i);
+            if !d.includes.is_empty() {
+                self.includes_docs.push_back(i);
+            }
+            i += 1;
+        })
+    }
+
+    fn collect_md_files(&mut self, src_path_base: PathBuf) {
         for result in Walk::new(&src_path_base) {
             match result {
                 Ok(entry) => {
@@ -279,16 +390,34 @@ impl HtmlConverter {
                         .strip_prefix(&src_path_base)
                         .expect("is prefix")
                         .to_path_buf();
-                    self.docs.push(Doc::new(&src_path_base, src_path_rel));
+                    let doc = Doc::new(&src_path_base, src_path_rel);
+                    self.docs.push(doc);
                 }
                 Err(err) => error!("Not an entry: {}", err),
             }
         }
         info!("Found {} md files", self.docs.len());
-        for d in &mut self.docs {
-            d.gen_html()?;
+    }
+
+    /// if all documents include by d are done, return a hashmap of did->html
+    fn include_map_if_ready(&self, d: &Doc) -> Option<HashMap<String, String>> {
+        let mut map: HashMap<String, String> = HashMap::new();
+        for did in &d.includes {
+            let j = match self.id2index.get(did) {
+                Some(index) => *index,
+                None => {
+                    warn!("including a DID which doesn't exist: {}", did);
+                    continue;
+                }
+            };
+            let ref d2 = self.docs[j];
+            if d2.html.is_empty() {
+                // the included file is not finished yet (includes something itself?)
+                return None;
+            }
+            map.insert(did.clone(), d2.html.clone());
         }
-        Ok(())
+        Some(map)
     }
 }
 

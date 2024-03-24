@@ -4,7 +4,13 @@ Hello *World*!
 
 Also see [dummy](dummy.html) and [the sample](markdown_sample.html).
 
-What about [linking via id](did:0cf2952da1160634b3b16be19c1c6fa9)?
+What about [linking via id](did:a724c47012f1a8a802048c3bf23a47f3)?
+
+![include](did:req1)
+
+![include](did:req2)
+
+![image](bla.png)
 
 ```docdustry-docmeta
 id: foo
