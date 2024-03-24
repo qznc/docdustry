@@ -1,6 +1,7 @@
 # CommonMark Spec
 
 ```docdustry-docmeta
+id: commonmark-spec
 title: CommonMark Spec
 author: John MacFarlane
 version: '0.31.2'

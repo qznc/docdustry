@@ -46,11 +46,16 @@ window.addEventListener("load", (event) => {
          const tocList = document.createElement('ul');
          let currentParentList = tocList;
          let previousLevel = 1;
+         let id_count = 1;
 
          headings.forEach((heading) => {
              const listItem = document.createElement('li');
              const anchor = document.createElement('a');
              anchor.textContent = heading.textContent;
+             if (!heading.id) {
+                heading.id = "toc-"+id_count;
+                id_count += 1;
+             }
              anchor.href = `#${heading.id}`;
              listItem.appendChild(anchor);
 

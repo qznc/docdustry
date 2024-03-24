@@ -5,6 +5,7 @@ Hello *World*!
 Also see [dummy](dummy.html) and [the sample](markdown_sample.html).
 
 What about [linking via id](did:a724c47012f1a8a802048c3bf23a47f3)?
+For example, [the CommonMark spec](did:commonmark-spec).
 
 ![include](did:req1)
 
