@@ -46,7 +46,7 @@ section.main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-si
 footer,
 header { height: calc(2*var(--base-line-height)); }
 
-article.inclusion { padding: 0 1em; }
+article.inclusion { padding: 0 0 0 8px; }
 article.inclusion a.inclusion { float:right; font-size: 0.6em; }
 
 /** COLORS **/
@@ -58,7 +58,7 @@ section.main blockquote { border-left: 1em solid #eee; }
 section.main a { text-decoration: underline; }
 section.main a:hover { text-decoration: none; }
 
-article.inclusion { border: 1px solid #000; border-width: 0 1px; }
+article.inclusion { border: 1px solid #000; border-width: 1px 0 0 1px; }
 
 header,
 footer { background-color: #aaa; }
@@ -66,6 +66,8 @@ footer { background-color: #aaa; }
 section.main pre.language-docdustry-docmeta>code,
 section.main pre.language-docdustry-docmeta { background-color: #aaa; color: #fff; font-weight: 300; }
 section.main pre.language-docdustry-docmeta { padding: 0 1em;}
+
+p.error { background-color: #f99; }
 
 /** FONTS **/
 body { font-size: var(--base-font-size); line-height: var(--base-line-height); }

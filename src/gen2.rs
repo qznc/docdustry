@@ -95,19 +95,18 @@ impl Doc {
                             self.html.push_str(&"<pre class=\"language-");
                             self.html.push_str(&lang);
                             self.html.push_str(&"\"><code>");
-                            if lang != CowStr::from("docdustry-docmeta") {
-                                continue;
-                            }
-                            if let Some(Event::Text(t)) = parser.next() {
-                                self.parse_meta(t.to_string());
-                                escape_html(&mut self.html, &t).unwrap();
-                            } else {
-                                todo!();
-                            }
-                            if let Some(Event::End(TagEnd::CodeBlock)) = parser.next() {
-                                self.html.push_str(&"</code></pre></details>");
-                            } else {
-                                todo!();
+                            if lang == CowStr::from("docdustry-docmeta") {
+                                if let Some(Event::Text(t)) = parser.next() {
+                                    self.parse_meta(t.to_string());
+                                    escape_html(&mut self.html, &t).unwrap();
+                                } else {
+                                    todo!();
+                                }
+                                if let Some(Event::End(TagEnd::CodeBlock)) = parser.next() {
+                                    self.html.push_str(&"</code></pre></details>");
+                                } else {
+                                    todo!();
+                                }
                             }
                         }
                     },
@@ -169,22 +168,23 @@ impl Doc {
                             let did = dest_url[4..].to_string();
                             match include_map {
                                 Some(m) => {
-                                    let html = match m.get(&did) {
-                                        Some(x) => x,
+                                    match m.get(&did) {
+                                        Some(html) => {
+                                            self.html.push_str(&r#"<article class="inclusion">"#);
+                                            self.html.push_str(&r#"<a class="inclusion" href=""#);
+                                            self.html.push_str(&dest_url);
+                                            self.html.push_str(&"\">inclusion</a>\n");
+                                            self.html.push_str(html);
+                                            self.html.push_str(&"</article>\n");
+                                        }
                                         None => {
-                                            warn!(
-                                                "Including a DID which does not exist: {}",
-                                                dest_url
-                                            );
-                                            continue;
+                                            warn!("Including non-existant DID: {}", dest_url);
+                                            self.html
+                                                .push_str(&r#"<p class="error">Inclusion fail: "#);
+                                            self.html.push_str(&dest_url);
+                                            self.html.push_str(&"</p>\n");
                                         }
                                     };
-                                    self.html.push_str(&r#"<article class="inclusion">"#);
-                                    self.html.push_str(&r#"<a class="inclusion" href=""#);
-                                    self.html.push_str(&dest_url);
-                                    self.html.push_str(&"\">inclusion</a>\n");
-                                    self.html.push_str(html);
-                                    self.html.push_str(&"</article>\n");
                                     skip_img_rest(&mut parser);
                                 }
                                 None => {
@@ -357,17 +357,14 @@ impl HtmlConverter {
     pub fn read_md_files(&mut self, src_path_base: PathBuf) -> Result<(), io::Error> {
         self.collect_md_files(src_path_base);
         self.markdown2html()?;
-        info!("id2index: {:?}", self.id2index);
         while !self.includes_docs.is_empty() {
             let i = self.includes_docs.pop_front().unwrap();
-            info!("try with includes: {}", i);
             let map = self.include_map_if_ready(&self.docs[i]);
             if map.is_none() {
                 continue;
             }
             let ref mut d = self.docs[i];
             info!("Repeat HTML generation: {}", d.did);
-            info!("With map {:?}", &map);
             d.parse_md(&d.raw.clone(), &map);
         }
         Ok(())
@@ -418,7 +415,6 @@ impl HtmlConverter {
             let j = match self.id2index.get(did) {
                 Some(index) => *index,
                 None => {
-                    warn!("including a DID which doesn't exist: {}", did);
                     continue;
                 }
             };
