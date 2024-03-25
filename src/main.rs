@@ -2,8 +2,8 @@ use clap::Parser;
 use log::error;
 use std::path::{Path, PathBuf};
 
-mod gen;
-mod gen2;
+mod gen_files;
+mod gen_html;
 mod spam_md;
 
 #[derive(Parser)]
@@ -27,7 +27,7 @@ fn main() {
     println!("Command: {}", args.command);
 
     match args.command.as_str() {
-        "gen" => gen::cmd_gen(args.sources, args.output),
+        "gen" => gen_files::cmd_gen(args.sources, args.output),
         "spam_md" => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
         _ => error!("Unknown command {}", args.command),
     }

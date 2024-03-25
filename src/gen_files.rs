@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 
-use crate::gen2::{read_md_files, Doc};
+use crate::gen_html::{read_md_files, Doc};
 
 pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
     let docs2 = read_md_files(sources).expect("read md succeeded");
@@ -17,7 +17,6 @@ pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
 }
 
 fn write_html_doc(output_dir: &PathBuf, d: &Doc) -> Result<(), std::io::Error> {
-    // generate file
     let html_path = d.html_path();
     let out_path = create_output_file(&html_path, output_dir)?;
     let fh = File::create(&out_path)?;
