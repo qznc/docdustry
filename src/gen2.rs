@@ -89,52 +89,14 @@ impl Doc {
                     }
                     Tag::CodeBlock(kind) => match kind {
                         CodeBlockKind::Indented => self.html.push_str(&"<pre><code>"),
-                        CodeBlockKind::Fenced(lang) => {
-                            self.html.push_str(&r#"<details class=\"metainfo">"#);
-                            self.html.push_str(&"<summary>doc meta info</summary>");
-                            self.html.push_str(&"<pre class=\"language-");
-                            self.html.push_str(&lang);
-                            self.html.push_str(&"\"><code>");
-                            if lang == CowStr::from("docdustry-docmeta") {
-                                if let Some(Event::Text(t)) = parser.next() {
-                                    self.parse_meta(t.to_string());
-                                    escape_html(&mut self.html, &t).unwrap();
-                                } else {
-                                    todo!();
-                                }
-                                if let Some(Event::End(TagEnd::CodeBlock)) = parser.next() {
-                                    self.html.push_str(&"</code></pre></details>");
-                                } else {
-                                    todo!();
-                                }
-                            }
-                        }
+                        CodeBlockKind::Fenced(lang) => self.gen_codeblock(lang, &mut parser),
                     },
                     Tag::Link {
                         link_type: _,
                         dest_url,
                         title,
                         id,
-                    } => {
-                        self.html.push_str(&format!(r#"<a href="{}">"#, dest_url));
-                        if !id.is_empty() {
-                            self.html.push_str(&" id=\"");
-                            self.html.push_str(&id);
-                            self.html.push('"');
-                        }
-                        if !title.is_empty() {
-                            self.html.push_str(&" title=\"");
-                            self.html.push_str(&title);
-                            self.html.push('"');
-                        }
-                        if dest_url.starts_with(&"https://")
-                            || dest_url.starts_with(&"http://")
-                            || dest_url.starts_with(&"#")
-                        {
-                            continue;
-                        }
-                        self.links.push(dest_url.to_string());
-                    }
+                    } => self.gen_link(dest_url, id, title),
                     Tag::Paragraph => self.html.push_str(&"<p>"),
                     Tag::BlockQuote => self.html.push_str(&"<blockquote>"),
                     Tag::HtmlBlock => self.html.push_str(&"<div html>"),
@@ -162,57 +124,7 @@ impl Doc {
                         dest_url,
                         title,
                         id,
-                    } => {
-                        if dest_url.starts_with(&"did:") {
-                            // include another page
-                            let did = dest_url[4..].to_string();
-                            match include_map {
-                                Some(m) => {
-                                    match m.get(&did) {
-                                        Some(html) => {
-                                            self.html.push_str(&r#"<article class="inclusion">"#);
-                                            self.html.push_str(&r#"<a class="inclusion" href=""#);
-                                            self.html.push_str(&dest_url);
-                                            self.html.push_str(&"\">inclusion</a>\n");
-                                            self.html.push_str(html);
-                                            self.html.push_str(&"</article>\n");
-                                        }
-                                        None => {
-                                            warn!("Including non-existant DID: {}", dest_url);
-                                            self.html
-                                                .push_str(&r#"<p class="error">Inclusion fail: "#);
-                                            self.html.push_str(&dest_url);
-                                            self.html.push_str(&"</p>\n");
-                                        }
-                                    };
-                                    skip_img_rest(&mut parser);
-                                }
-                                None => {
-                                    self.includes.push(did);
-                                }
-                            };
-                        } else {
-                            // normal image
-                            self.html.push_str(&"<img");
-                            if !dest_url.is_empty() {
-                                self.html.push_str(" src=\"");
-                                self.html.push_str(&dest_url);
-                                self.html.push('"');
-                            }
-                            if !id.is_empty() {
-                                self.html.push_str(" id=\"");
-                                self.html.push_str(&id);
-                                self.html.push('"');
-                            }
-                            if !title.is_empty() {
-                                self.html.push_str(" title=\"");
-                                self.html.push_str(&title);
-                                self.html.push('"');
-                            }
-                            self.html.push('>');
-                            skip_img_rest(&mut parser);
-                        }
-                    }
+                    } => self.gen_img(dest_url, include_map, &mut parser, id, title),
                     Tag::MetadataBlock(_) => todo!(),
                 },
                 Event::End(tag) => match tag {
@@ -265,6 +177,106 @@ impl Doc {
             self.title.push_str(&"<unknown>");
         }
         self.url = self.rel_url();
+    }
+
+    fn gen_img(
+        &mut self,
+        dest_url: CowStr<'_>,
+        include_map: &Option<HashMap<String, String>>,
+        parser: &mut Parser<'_>,
+        id: CowStr<'_>,
+        title: CowStr<'_>,
+    ) {
+        if dest_url.starts_with(&"did:") {
+            // include another page
+            let did = dest_url[4..].to_string();
+            match include_map {
+                Some(m) => {
+                    match m.get(&did) {
+                        Some(html) => {
+                            self.html.push_str(&r#"<article class="inclusion">"#);
+                            self.html.push_str(&r#"<a class="inclusion" href=""#);
+                            self.html.push_str(&dest_url);
+                            self.html.push_str(&"\">inclusion</a>\n");
+                            self.html.push_str(html);
+                            self.html.push_str(&"</article>\n");
+                        }
+                        None => {
+                            warn!("Including non-existant DID: {}", dest_url);
+                            self.html.push_str(&r#"<p class="error">Inclusion fail: "#);
+                            self.html.push_str(&dest_url);
+                            self.html.push_str(&"</p>\n");
+                        }
+                    };
+                    skip_img_rest(parser);
+                }
+                None => {
+                    self.includes.push(did);
+                }
+            };
+        } else {
+            // normal image
+            self.html.push_str(&"<img");
+            if !dest_url.is_empty() {
+                self.html.push_str(" src=\"");
+                self.html.push_str(&dest_url);
+                self.html.push('"');
+            }
+            if !id.is_empty() {
+                self.html.push_str(" id=\"");
+                self.html.push_str(&id);
+                self.html.push('"');
+            }
+            if !title.is_empty() {
+                self.html.push_str(" title=\"");
+                self.html.push_str(&title);
+                self.html.push('"');
+            }
+            self.html.push('>');
+            skip_img_rest(parser);
+        }
+    }
+
+    fn gen_link(&mut self, dest_url: CowStr<'_>, id: CowStr<'_>, title: CowStr<'_>) {
+        self.html.push_str(&format!(r#"<a href="{}">"#, dest_url));
+        if !id.is_empty() {
+            self.html.push_str(&" id=\"");
+            self.html.push_str(&id);
+            self.html.push('"');
+        }
+        if !title.is_empty() {
+            self.html.push_str(&" title=\"");
+            self.html.push_str(&title);
+            self.html.push('"');
+        }
+        if dest_url.starts_with(&"https://")
+            || dest_url.starts_with(&"http://")
+            || dest_url.starts_with(&"#")
+        {
+        } else {
+            self.links.push(dest_url.to_string());
+        }
+    }
+
+    fn gen_codeblock(&mut self, lang: CowStr<'_>, parser: &mut Parser<'_>) {
+        self.html.push_str(&r#"<details class=\"metainfo">"#);
+        self.html.push_str(&"<summary>doc meta info</summary>");
+        self.html.push_str(&"<pre class=\"language-");
+        self.html.push_str(&lang);
+        self.html.push_str(&"\"><code>");
+        if lang == CowStr::from("docdustry-docmeta") {
+            if let Some(Event::Text(t)) = parser.next() {
+                self.parse_meta(t.to_string());
+                escape_html(&mut self.html, &t).unwrap();
+            } else {
+                todo!();
+            }
+            if let Some(Event::End(TagEnd::CodeBlock)) = parser.next() {
+                self.html.push_str(&"</code></pre></details>");
+            } else {
+                todo!();
+            }
+        }
     }
 
     fn parse_meta(&mut self, meta: String) {
