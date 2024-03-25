@@ -50,6 +50,7 @@ fn write_globals_file(output_dir: &PathBuf, docs: &Vec<Doc>) -> Result<(), std::
 }
 
 fn write_static_files(output_dir: &PathBuf) -> Result<(), std::io::Error> {
+    fs::write(output_dir.join("index.html"), INDEX_HTML)?;
     let dir = output_dir.join("docdustry_static");
     create_dir_all(&dir)?;
     fs::write(dir.join("default.css"), CSS)?;
@@ -76,6 +77,7 @@ const TMPL: [&'static str; 4] = [
 ];
 const CSS: &'static [u8] = include_bytes!("default.css");
 const JS: &'static [u8] = include_bytes!("default.js");
+const INDEX_HTML: &'static [u8] = include_bytes!("index.html");
 
 fn create_output_file(html_path: &Path, output_dir: &PathBuf) -> Result<PathBuf, std::io::Error> {
     let output_file_path = output_dir.join(html_path);

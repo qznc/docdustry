@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Page</title>
+  <script src="docdustry_static/globals.js" type="text/javascript" defer></script>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .search-container {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 20px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .search-results { text-align: left; }
+  </style>
+</head>
+<body>
+
+<div class="search-container">
+  <h2>Search</h2>
+  <input type="text" id="searchInput" placeholder="Search by title or tags...">
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const searchResultsContainer = document.getElementById('searchResults');
+
+  function searchDocs(query) {
+    const results = [];
+    const lowerCaseQuery = query.toLowerCase();
+
+    DOCDUSTRY_GLOBALS.docs.forEach(doc => {
+      const lowerCaseTitle = doc.title.toLowerCase();
+      const tags = doc.tags.map(tag => tag.toLowerCase());
+
+      if (lowerCaseTitle.includes(lowerCaseQuery) || tags.includes(lowerCaseQuery)) {
+        results.push(doc);
+      }
+    });
+
+    return results;
+  }
+
+  function renderResults(results) {
+    if (results.length === 0) {
+      searchResultsContainer.innerHTML = '<p>No results found.</p>';
+      return;
+    }
+
+    const html = results.map(doc => {
+      const url = doc.url.replace('../', ''); // remove "../" prefix
+      return `<div><a href="${url}">${doc.title}</a></div>`;
+    }).join('');
+
+    searchResultsContainer.innerHTML = html;
+  }
+
+  searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    if (query.length >= 3) {
+      const results = searchDocs(query);
+      renderResults(results);
+    }
+  });
+</script>
+
+</body>
+</html>
