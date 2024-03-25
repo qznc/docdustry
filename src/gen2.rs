@@ -90,6 +90,8 @@ impl Doc {
                     Tag::CodeBlock(kind) => match kind {
                         CodeBlockKind::Indented => self.html.push_str(&"<pre><code>"),
                         CodeBlockKind::Fenced(lang) => {
+                            self.html.push_str(&r#"<details class=\"metainfo">"#);
+                            self.html.push_str(&"<summary>doc meta info</summary>");
                             self.html.push_str(&"<pre class=\"language-");
                             self.html.push_str(&lang);
                             self.html.push_str(&"\"><code>");
@@ -99,6 +101,11 @@ impl Doc {
                             if let Some(Event::Text(t)) = parser.next() {
                                 self.parse_meta(t.to_string());
                                 escape_html(&mut self.html, &t).unwrap();
+                            } else {
+                                todo!();
+                            }
+                            if let Some(Event::End(TagEnd::CodeBlock)) = parser.next() {
+                                self.html.push_str(&"</code></pre></details>");
                             } else {
                                 todo!();
                             }
