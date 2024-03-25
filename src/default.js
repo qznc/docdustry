@@ -1,9 +1,6 @@
 window.addEventListener("load", (event) => {
      'use strict';
 
-     console.log("GLOBALS: ", DOCDUSTRY_GLOBALS);
-     console.log("LOCALS: ", DOCDUSTRY_LOCALS);
-
      // document status as CSS class on body
      const doc_status = DOCDUSTRY_LOCALS["status"];
      if (doc_status) {
@@ -23,14 +20,14 @@ window.addEventListener("load", (event) => {
           var did = e.href;
           if (! did.startsWith("did:")) return;
           did = did.substring(4);
-          console.log("Found did link:", e);
           for (var j=0, len_j=DOCDUSTRY_GLOBALS.docs.length; j<len_j; j++) {
                const d = DOCDUSTRY_GLOBALS.docs[j];
-               console.log("compare", d.did, "vs", did);
                if (d.did == did) {
                     e.href = d.url;
                     e.title = d.title;
-                    console.log("Replaced for", d.url);
+                    if (e.innerText == "") {
+                        e.textContent += d.title;
+                    }
                     break;
                }
           }
@@ -81,7 +78,7 @@ window.addEventListener("load", (event) => {
      }
 
      const header = document.querySelector('header');
-     header.innerHTML = "<p>The header</p>";
+     header.innerHTML = '<p><a href="../index.html">Start page</a> and more header</p>';
 
      const footer = document.querySelector('footer');
      footer.innerHTML = "<p>The footer</p>";

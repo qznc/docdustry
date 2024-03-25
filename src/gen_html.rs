@@ -238,7 +238,9 @@ impl Doc {
     }
 
     fn gen_link(&mut self, dest_url: CowStr<'_>, id: CowStr<'_>, title: CowStr<'_>) {
-        self.html.push_str(&format!(r#"<a href="{}">"#, dest_url));
+        self.html.push_str(&"<a href=\"");
+        self.html.push_str(&dest_url);
+        self.html.push('"');
         if !id.is_empty() {
             self.html.push_str(&" id=\"");
             self.html.push_str(&id);
@@ -249,6 +251,7 @@ impl Doc {
             self.html.push_str(&title);
             self.html.push('"');
         }
+        self.html.push('>');
         if dest_url.starts_with(&"https://")
             || dest_url.starts_with(&"http://")
             || dest_url.starts_with(&"#")

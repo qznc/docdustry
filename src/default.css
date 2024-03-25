@@ -22,6 +22,7 @@ header>*,
 footer>*,
 section.main { width: 40em; margin: 1em auto; }
 
+section.main details,
 section.main h1,
 section.main h2,
 section.main h3,
@@ -44,7 +45,7 @@ section.main a[href^="http://"]::before { content: '🌐'; opacity: 0.5; font-si
 section.main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-size: 0.8em; }
 
 footer,
-header { height: calc(2*var(--base-line-height)); }
+header { height: calc(2*var(--base-line-height)); clear: both; }
 
 article.inclusion { padding: 0 0 0 8px; }
 article.inclusion a.inclusion { float:right; font-size: 0.6em; }
@@ -76,6 +77,7 @@ h2 { font-size: 1.7em; font-weight: normal; }
 h3 { font-size: 1.1em; }
 h4 { font-size: 1.0em; }
 h5 { font-size: 0.9em; }
+section.main summary { font-size: 0.8em; }
 h6 { font-weight: normal; }
 h1, h2, h3 { line-height: calc(2*var(--base-line-height)); }
 body { font-family: Seravek, 'Gill Sans Nova', Ubuntu, Calibri, 'DejaVu Sans', source-sans-pro, sans-serif; }
