@@ -369,9 +369,9 @@ impl HtmlConverter {
         }
     }
 
-    pub fn read_md_files(&mut self, src_path_base: PathBuf) -> Result<(), io::Error> {
+    pub fn read_md_files(&mut self, src_path_base: PathBuf) {
         self.collect_md_files(src_path_base);
-        self.markdown2html()?;
+        self.markdown2html();
         while !self.includes_docs.is_empty() {
             let i = self.includes_docs.pop_front().unwrap();
             let map = self.include_map_if_ready(&self.docs[i]);
@@ -382,19 +382,23 @@ impl HtmlConverter {
             info!("Repeat HTML generation: {}", d.did);
             d.parse_md(&d.raw.clone(), &map);
         }
-        Ok(())
     }
 
-    fn markdown2html(&mut self) -> Result<(), io::Error> {
+    fn markdown2html(&mut self) {
         let mut i: usize = 0;
-        Ok(for d in &mut self.docs {
-            d.gen_html()?;
+        for d in &mut self.docs {
+            let result = d.gen_html();
+            if let Err(e) = result {
+                let path = d.src_path_base.join(&d.src_path_rel);
+                warn!("skip {}: {}", path.display(), e);
+                continue;
+            }
             self.id2index.insert(d.did.clone(), i);
             if !d.includes.is_empty() {
                 self.includes_docs.push_back(i);
             }
             i += 1;
-        })
+        }
     }
 
     fn collect_md_files(&mut self, src_path_base: PathBuf) {
@@ -406,9 +410,14 @@ impl HtmlConverter {
                         continue;
                     }
                     let p = entry.path();
-                    if p.extension().unwrap() != "md" {
-                        continue;
-                    }
+                    match p.extension() {
+                        Some(ext) => {
+                            if ext != "md" {
+                                continue;
+                            }
+                        }
+                        None => continue,
+                    };
                     let src_path_rel = entry
                         .path()
                         .strip_prefix(&src_path_base)
@@ -444,8 +453,8 @@ impl HtmlConverter {
     }
 }
 
-pub fn read_md_files(src_path_base: PathBuf) -> Result<Vec<Doc>, io::Error> {
+pub fn read_md_files(src_path_base: PathBuf) -> Vec<Doc> {
     let mut conv = HtmlConverter::new();
-    conv.read_md_files(src_path_base)?;
-    Ok(conv.docs)
+    conv.read_md_files(src_path_base);
+    conv.docs
 }

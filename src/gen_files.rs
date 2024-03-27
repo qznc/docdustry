@@ -7,13 +7,13 @@ use std::path::{Path, PathBuf};
 use crate::gen_html::{read_md_files, Doc};
 
 pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
-    let docs2 = read_md_files(sources).expect("read md succeeded");
-    for d in &docs2 {
+    let docs = read_md_files(sources);
+    for d in &docs {
         write_html_doc(&output, &d).expect("write html");
     }
 
     write_static_files(&output).unwrap();
-    write_globals_file(&output, &docs2).unwrap();
+    write_globals_file(&output, &docs).unwrap();
 }
 
 fn write_html_doc(output_dir: &PathBuf, d: &Doc) -> Result<(), std::io::Error> {
