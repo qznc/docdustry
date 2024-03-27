@@ -18,9 +18,16 @@ p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
 }
 
 /** LAYOUT **/
-header>*,
+header nav,
 footer>*,
-section.main { width: 40em; margin: 1em auto; }
+section.main { width: 40em; margin: 0 auto; }
+
+header { padding-top: 4px; }
+header div.search { float: right; margin: 0 2em 0 0; }
+header div.search input { width: 20em; }
+
+#searchResults { position: absolute; padding: 1em; }
+#searchResults.empty { display: none; }
 
 section.main details,
 section.main h1,
@@ -56,13 +63,15 @@ section.main pre { background-color: #eee; }
 
 section.main blockquote { border-left: 1em solid #eee; }
 
-section.main a { text-decoration: underline; }
-section.main a:hover { text-decoration: none; }
-
 article.inclusion { border: 1px solid #000; border-width: 1px 0 0 1px; }
 
+#searchResults { background-color: #fff; }
+
+header #searchResults,
 header,
-footer { background-color: #aaa; }
+header a,
+footer a,
+footer { background-color: #555; color: #fff; }
 
 section.main pre.language-docdustry-docmeta>code,
 section.main pre.language-docdustry-docmeta { background-color: #aaa; color: #fff; font-weight: 300; }
@@ -84,6 +93,12 @@ body { font-family: Seravek, 'Gill Sans Nova', Ubuntu, Calibri, 'DejaVu Sans', s
 code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
 
 section.main { font-variant-numeric: oldstyle-nums slashed-zero; }
+header a,
+footer a
+section.main a:hover { text-decoration: none; }
+header a:hover,
+footer a:hover,
+section.main a { text-decoration: underline; }
 
 /** DEBUGGING **/
 
