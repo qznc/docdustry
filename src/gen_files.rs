@@ -71,8 +71,10 @@ const TMPL: [&'static str; 4] = [
 <script type="text/javascript">const DOCDUSTRY_LOCALS = "#,
     r#";</script>
 <body><header></header>
+<div class="page">
 <section class="main">"#,
     r#"</section>
+</div>
 <footer></footer></body></html>"#,
 ];
 const CSS: &'static [u8] = include_bytes!("default.css");

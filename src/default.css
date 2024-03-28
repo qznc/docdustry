@@ -22,6 +22,9 @@ header nav,
 footer>*,
 section.main { width: 40em; margin: 0 auto; }
 
+body { min-height: 100vh; display: flex; flex-direction: column; }
+footer { margin-top: auto; }
+
 header { padding-top: 4px; }
 header div.search { float: right; margin: 0 2em 0 0; }
 header div.search input { width: 20em; }
