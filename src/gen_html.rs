@@ -7,7 +7,7 @@ use std::collections::{HashMap, VecDeque};
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 use std::io::{self, BufWriter};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(serde::Serialize)]
 pub struct Doc {
@@ -31,10 +31,10 @@ pub struct Doc {
 }
 
 impl Doc {
-    fn new(src_path_base: &PathBuf, src_path_rel: PathBuf) -> Doc {
+    fn new(src_path_base: PathBuf, src_path_rel: PathBuf) -> Doc {
         Doc {
             src_path_rel,
-            src_path_base: src_path_base.to_path_buf(),
+            src_path_base,
             html: String::with_capacity(4000),
             title: String::new(),
             links: vec![],
@@ -381,7 +381,7 @@ impl HtmlConverter {
         }
     }
 
-    pub fn read_md_files(&mut self, src_path_base: PathBuf) {
+    fn read_md_files(&mut self, src_path_base: &Path) {
         self.collect_md_files(src_path_base);
         self.markdown2html();
         while !self.includes_docs.is_empty() {
@@ -413,7 +413,7 @@ impl HtmlConverter {
         }
     }
 
-    fn collect_md_files(&mut self, src_path_base: PathBuf) {
+    fn collect_md_files(&mut self, src_path_base: &Path) {
         for result in Walk::new(&src_path_base) {
             match result {
                 Ok(entry) => {
@@ -435,7 +435,7 @@ impl HtmlConverter {
                         .strip_prefix(&src_path_base)
                         .expect("is prefix")
                         .to_path_buf();
-                    let doc = Doc::new(&src_path_base, src_path_rel);
+                    let doc = Doc::new(src_path_base.to_path_buf(), src_path_rel);
                     self.docs.push(doc);
                 }
                 Err(err) => error!("Not an entry: {}", err),
@@ -465,8 +465,8 @@ impl HtmlConverter {
     }
 }
 
-pub fn read_md_files(src_path_base: PathBuf) -> Vec<Doc> {
+pub fn read_md_files(docs: &mut Vec<Doc>, src_path_base: &Path) {
     let mut conv = HtmlConverter::new();
     conv.read_md_files(src_path_base);
-    conv.docs
+    docs.append(&mut conv.docs);
 }

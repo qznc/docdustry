@@ -1,13 +1,23 @@
+use log::info;
 use serde_json;
 use std::fs::{self, create_dir_all, File};
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 
+use crate::config::Config;
 use crate::gen_html::{read_md_files, Doc};
 
-pub(crate) fn cmd_gen(sources: PathBuf, output: PathBuf) {
-    let docs = read_md_files(sources);
+pub(crate) fn cmd_gen(cfg: &Config) {
+    let output = cfg.output.clone();
+    if !output.exists() {
+        create_dir_all(&output).unwrap();
+    }
+    info!("output: {}", &output.display());
+    let mut docs: Vec<Doc> = vec![];
+    for src in cfg.get_sources() {
+        read_md_files(&mut docs, src.as_path());
+    }
     for d in &docs {
         write_html_doc(&output, &d).expect("write html");
     }
