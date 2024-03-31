@@ -9,7 +9,7 @@ window.addEventListener("load", (event) => {
 
   // ids for top headline
   const first_h1 = document.querySelector('h1');
-  const doc_id = DOCDUSTRY_LOCALS["id"];
+  const doc_id = DOCDUSTRY_LOCALS["did"];
   if (first_h1) {
     first_h1.setAttribute("id", doc_id);
   }
@@ -156,6 +156,34 @@ window.addEventListener("load", (event) => {
         searchResultsContainer.classList.add("empty");
       }
     });
+  }
+
+  // backlinks
+  if (main) {
+    const backlinks = [];
+    DOCDUSTRY_GLOBALS.docs.forEach(doc => {
+      for (const link of doc.links) {
+        if (!link.startsWith("did:")) continue;
+        if (link.substring(4) === doc_id) {
+          backlinks.push(doc);
+          break;
+        }
+      }
+    });
+    const container = document.createElement('div');
+    container.classList.add("backlinks");
+    const descriptor = document.createElement('span');
+    descriptor.classList.add("descriptor");
+    descriptor.innerText = "Backlinks:";
+    container.appendChild(descriptor);
+    for (const doc of backlinks) {
+      container.appendChild(document.createTextNode(" "));
+      const b = document.createElement('a');
+      b.innerText = doc.title;
+      b.href = doc.url;
+      container.appendChild(b);
+    }
+    main.appendChild(container);
   }
 
 });

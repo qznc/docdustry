@@ -43,6 +43,7 @@ section.main p+ul,
 section.main p+ol,
 section.main hr,
 section.main pre,
+section.main div.backlinks,
 section.main p { margin-top: var(--base-line-height); }
 
 section.main pre { overflow-x: auto; }
