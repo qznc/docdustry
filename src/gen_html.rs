@@ -262,23 +262,35 @@ impl Doc {
     }
 
     fn gen_codeblock(&mut self, lang: CowStr<'_>, parser: &mut Parser<'_>) {
-        self.html.push_str(&r#"<details class=\"metainfo">"#);
-        self.html.push_str(&"<summary>doc meta info</summary>");
+        let meta: bool = lang == CowStr::from("docdustry-docmeta");
+        if meta {
+            self.html.push_str(&r#"<details class=\"metainfo">"#);
+            self.html.push_str(&"<summary>doc meta info</summary>");
+        }
         self.html.push_str(&"<pre class=\"language-");
-        self.html.push_str(&lang);
+        if lang.is_empty() {
+            self.html.push_str(&"unknown");
+        } else {
+            self.html.push_str(&lang);
+        }
         self.html.push_str(&"\"><code>");
-        if lang == CowStr::from("docdustry-docmeta") {
-            if let Some(Event::Text(t)) = parser.next() {
-                self.parse_meta(t.to_string());
-                escape_html(&mut self.html, &t).unwrap();
-            } else {
-                todo!();
+        while let Some(event) = parser.next() {
+            match event {
+                Event::End(TagEnd::CodeBlock) => {
+                    self.html.push_str(&"</code></pre>");
+                    break;
+                }
+                Event::Text(t) => {
+                    if meta {
+                        self.parse_meta(t.to_string());
+                    }
+                    escape_html(&mut self.html, &t).unwrap();
+                }
+                _ => todo!(),
             }
-            if let Some(Event::End(TagEnd::CodeBlock)) = parser.next() {
-                self.html.push_str(&"</code></pre></details>");
-            } else {
-                todo!();
-            }
+        }
+        if meta {
+            self.html.push_str(&"</details>");
         }
     }
 
