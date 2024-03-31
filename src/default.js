@@ -176,20 +176,22 @@ window.addEventListener("load", (event) => {
         }
       }
     });
-    const container = document.createElement('div');
-    container.classList.add("backlinks");
-    const descriptor = document.createElement('span');
-    descriptor.classList.add("descriptor");
-    descriptor.innerText = "Backlinks:";
-    container.appendChild(descriptor);
-    for (const doc of backlinks) {
-      container.appendChild(document.createTextNode(" "));
-      const b = document.createElement('a');
-      b.innerText = doc.title;
-      b.href = doc.url;
-      container.appendChild(b);
+    if (backlinks.length > 0) {
+      const container = document.createElement('div');
+      container.classList.add("backlinks");
+      const descriptor = document.createElement('span');
+      descriptor.classList.add("descriptor");
+      descriptor.innerText = "Backlinks:";
+      container.appendChild(descriptor);
+      for (const doc of backlinks) {
+        container.appendChild(document.createTextNode(" "));
+        const b = document.createElement('a');
+        b.innerText = doc.title;
+        b.href = doc.url;
+        container.appendChild(b);
+      }
+      main.appendChild(container);
     }
-    main.appendChild(container);
   }
 
 });
