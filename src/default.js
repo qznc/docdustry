@@ -169,6 +169,12 @@ window.addEventListener("load", (event) => {
           break;
         }
       }
+      for (const link of doc.includes) {
+        if (link === doc_id) {
+          backlinks.push(doc);
+          break;
+        }
+      }
     });
     const container = document.createElement('div');
     container.classList.add("backlinks");
