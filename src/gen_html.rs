@@ -28,6 +28,8 @@ pub struct Doc {
     pub src_path_rel: PathBuf,
     #[serde(skip)]
     src_path_base: PathBuf,
+    #[serde(skip)]
+    redo: bool,
 }
 
 impl Doc {
@@ -44,22 +46,28 @@ impl Doc {
             url: String::new(),
             includes: vec![],
             raw: String::new(),
+            redo: false,
         }
     }
 
     fn gen_html(&mut self) -> Result<(), io::Error> {
         let file = self.src_path_base.join(&self.src_path_rel);
         let raw = read_to_string(file)?;
-        self.parse_md(&raw, &None);
-        if !self.includes.is_empty() {
-            // need at least a second run for the inclusion
+        self.parse_md(&raw, &None, &vec![]);
+        if self.redo {
             self.html.clear();
             self.raw = raw;
+            self.redo = false;
         }
         Ok(())
     }
 
-    fn parse_md(&mut self, raw: &String, include_map: &Option<HashMap<String, String>>) {
+    fn parse_md(
+        &mut self,
+        raw: &String,
+        include_map: &Option<HashMap<String, String>>,
+        metas: &Vec<DocMeta>,
+    ) {
         let mut parser = Parser::new(raw);
         while let Some(event) = parser.next() {
             match event {
@@ -89,7 +97,7 @@ impl Doc {
                     }
                     Tag::CodeBlock(kind) => match kind {
                         CodeBlockKind::Indented => self.html.push_str(&"<pre><code>"),
-                        CodeBlockKind::Fenced(lang) => self.gen_codeblock(lang, &mut parser),
+                        CodeBlockKind::Fenced(lang) => self.gen_codeblock(lang, &mut parser, metas),
                     },
                     Tag::Link {
                         link_type: _,
@@ -212,6 +220,7 @@ impl Doc {
                 }
                 None => {
                     self.includes.push(did);
+                    self.redo = true;
                 }
             };
         } else {
@@ -261,12 +270,79 @@ impl Doc {
         }
     }
 
-    fn gen_codeblock(&mut self, lang: CowStr<'_>, parser: &mut Parser<'_>) {
-        let meta: bool = lang == CowStr::from("docdustry-docmeta");
-        if meta {
-            self.html.push_str(&r#"<details class=\"metainfo">"#);
-            self.html.push_str(&"<summary>doc meta info</summary>");
+    fn gen_codeblock(&mut self, lang: CowStr<'_>, parser: &mut Parser<'_>, metas: &Vec<DocMeta>) {
+        if lang == CowStr::from("docdustry-docmeta") {
+            self.gen_codeblock_metainfo(parser);
+        } else if lang == CowStr::from("docdustry-doclist") {
+            self.gen_codeblock_doclist(parser, metas);
+        } else {
+            self.gen_codeblock_normal(lang, parser);
         }
+    }
+
+    fn gen_codeblock_metainfo(&mut self, parser: &mut Parser<'_>) {
+        self.html.push_str(&r#"<details class=\"metainfo">"#);
+        self.html.push_str(&"<summary>doc meta info</summary>");
+        self.html
+            .push_str(&"<pre class=\"docdustry-docmeta\"><code>");
+        while let Some(event) = parser.next() {
+            match event {
+                Event::End(TagEnd::CodeBlock) => {
+                    self.html.push_str(&"</code></pre>");
+                    break;
+                }
+                Event::Text(t) => {
+                    self.parse_meta(t.to_string());
+                    escape_html(&mut self.html, &t).unwrap();
+                }
+                _ => todo!(),
+            }
+        }
+        self.html.push_str(&"</details>");
+    }
+
+    fn gen_codeblock_doclist(&mut self, parser: &mut Parser<'_>, metas: &Vec<DocMeta>) {
+        let mut this_list: Vec<DocMeta> = metas.to_vec();
+        self.html.push_str(&r#"<ul class="doclist">"#);
+        while let Some(event) = parser.next() {
+            match event {
+                Event::End(TagEnd::CodeBlock) => {
+                    break;
+                }
+                Event::Text(t) => {
+                    for line in t.lines() {
+                        if let Some((k, v)) = line.split_once(":") {
+                            let key = k.trim();
+                            let value: String = v.trim().to_string();
+                            if key == "only-if-tagged" {
+                                this_list = this_list
+                                    .into_iter()
+                                    .filter(|dm| dm.tags.contains(&value))
+                                    .collect::<Vec<DocMeta>>();
+                            } else if key == "skip-if-tagged" {
+                                this_list = this_list
+                                    .into_iter()
+                                    .filter(|dm| !dm.tags.contains(&value))
+                                    .collect::<Vec<DocMeta>>();
+                            }
+                        }
+                    }
+                }
+                _ => todo!(),
+            }
+        }
+        for dm in this_list {
+            self.html.push_str(&"<li><a href=\"did:");
+            self.html.push_str(&dm.did);
+            self.html.push_str(&"\">");
+            self.html.push_str(&dm.title);
+            self.html.push_str(&"</a></li>");
+            self.includes.push(dm.did);
+        }
+        self.html.push_str(&"</ul>");
+    }
+
+    fn gen_codeblock_normal(&mut self, lang: CowStr<'_>, parser: &mut Parser<'_>) {
         self.html.push_str(&"<pre class=\"language-");
         if lang.is_empty() {
             self.html.push_str(&"unknown");
@@ -281,16 +357,10 @@ impl Doc {
                     break;
                 }
                 Event::Text(t) => {
-                    if meta {
-                        self.parse_meta(t.to_string());
-                    }
                     escape_html(&mut self.html, &t).unwrap();
                 }
                 _ => todo!(),
             }
-        }
-        if meta {
-            self.html.push_str(&"</details>");
         }
     }
 
@@ -372,6 +442,13 @@ struct HtmlConverter {
     includes_docs: VecDeque<usize>,
 }
 
+#[derive(Clone)]
+struct DocMeta {
+    did: String,
+    title: String,
+    tags: Vec<String>,
+}
+
 impl HtmlConverter {
     pub fn new() -> HtmlConverter {
         HtmlConverter {
@@ -383,7 +460,8 @@ impl HtmlConverter {
 
     fn read_md_files(&mut self, src_path_base: &Path) {
         self.collect_md_files(src_path_base);
-        self.markdown2html();
+        self.first_pass_across_all();
+        let metas: Vec<DocMeta> = doc2docmeta(&self.docs);
         while !self.includes_docs.is_empty() {
             let i = self.includes_docs.pop_front().unwrap();
             let map = self.include_map_if_ready(&self.docs[i]);
@@ -392,11 +470,11 @@ impl HtmlConverter {
             }
             let ref mut d = self.docs[i];
             info!("Repeat HTML generation: {}", d.did);
-            d.parse_md(&d.raw.clone(), &map);
+            d.parse_md(&d.raw.clone(), &map, &metas);
         }
     }
 
-    fn markdown2html(&mut self) {
+    fn first_pass_across_all(&mut self) {
         let mut i: usize = 0;
         for d in &mut self.docs {
             let result = d.gen_html();
@@ -463,6 +541,16 @@ impl HtmlConverter {
         }
         Some(map)
     }
+}
+
+fn doc2docmeta(docs: &Vec<Doc>) -> Vec<DocMeta> {
+    docs.iter()
+        .map(|d| DocMeta {
+            did: d.did.clone(),
+            title: d.title.clone(),
+            tags: d.tags.clone(),
+        })
+        .collect()
 }
 
 pub fn read_md_files(docs: &mut Vec<Doc>, src_path_base: &Path) {
