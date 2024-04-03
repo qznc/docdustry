@@ -13,7 +13,7 @@ p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
 /** VARIABLES **/
 
 :root {
-  --base-font-size: 18px;
+  --base-font-size: 20px;
   --base-line-height: 26px;
 }
 
@@ -44,9 +44,9 @@ section.main p+ol,
 section.main hr,
 section.main pre,
 section.main div.backlinks,
-section.main p { margin-top: var(--base-line-height); }
+section.main p { margin: var(--base-line-height) 0 var(--base-line-height) 0; }
 
-section.main pre { overflow-x: auto; }
+section.main pre { overflow-x: auto; padding: 2px 5px 2px 5px; }
 
 section.main blockquote { padding-left: 4px; }
 
@@ -60,6 +60,8 @@ header { height: calc(2*var(--base-line-height)); clear: both; }
 
 article.inclusion { padding: 0 0 0 8px; }
 article.inclusion a.inclusion { float:right; font-size: 0.6em; }
+
+#docdustry-toc { max-width: 30%; padding: 1em; }
 
 /** COLORS **/
 section.main code,
@@ -93,7 +95,8 @@ h5 { font-size: 0.9em; }
 section.main summary { font-size: 0.8em; }
 h6 { font-weight: normal; }
 h1, h2, h3 { line-height: calc(2*var(--base-line-height)); }
-body { font-family: Seravek, 'Gill Sans Nova', Ubuntu, Calibri, 'DejaVu Sans', source-sans-pro, sans-serif; }
+
+body { font-family: Helvetica, "Helvetica Neue", Roboto, "Liberation Sans", "DejaVu Sans Condensed", "Nimbus Sans", "Nimbus Sans L", sans-serif; }
 code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
 
 section.main { font-variant-numeric: oldstyle-nums slashed-zero; }

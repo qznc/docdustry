@@ -42,40 +42,60 @@ window.addEventListener("load", (event) => {
     const tocContainer = document.createElement('section');
     tocContainer.id = "docdustry-toc";
     tocContainer.style = "float:right";
-    const tocList = document.createElement('ul');
-    let currentParentList = tocList;
-    let previousLevel = 1;
-    let id_count = 1;
+    const dummy = document.createElement('div');
+    tocContainer.appendChild(dummy);
+    var currentLevel = 0;
+    let currentList = tocContainer;
 
-    headings.forEach((heading) => {
-      const listItem = document.createElement('li');
-      const anchor = document.createElement('a');
-      anchor.textContent = heading.textContent;
+    headings.forEach((heading, index) => {
       if (!heading.id) {
-        heading.id = "toc-" + id_count;
-        id_count += 1;
+        heading.id = "toc-" + index;
       }
-      anchor.href = `#${heading.id}`;
-      listItem.appendChild(anchor);
 
-      const level = parseInt(heading.tagName.charAt(1));
+      var level = parseInt(heading.tagName.charAt(1));
 
-      if (level > previousLevel) {
-        const sublist = document.createElement('ul');
-        currentParentList.lastElementChild.appendChild(sublist);
-        currentParentList = sublist;
-      } else if (level < previousLevel) {
-        let diff = previousLevel - level;
-        while (diff > 0) {
-          currentParentList = currentParentList.parentElement.parentElement;
-          diff--;
+      // Adjust level based on section nesting
+      var sectionCount = 0;
+      var parent = heading.parentElement;
+      while (parent && parent !== main) {
+        if (parent.tagName.toLowerCase() === 'article') {
+          sectionCount++;
         }
+        parent = parent.parentElement;
+      }
+      level += sectionCount;
+
+
+      // Create new list if necessary
+      while (currentLevel < level) {
+        var newList = document.createElement('ul');
+        const last = currentList.lastElementChild;
+        if (last) {
+          currentList.lastElementChild.appendChild(newList);
+        } else {
+          const newItem = document.createElement('li');
+          currentList.appendChild(newItem);
+          newItem.appendChild(newList);
+        }
+        currentList = newList;
+        currentLevel++;
       }
 
-      currentParentList.appendChild(listItem);
-      previousLevel = level;
+      // Go up levels if necessary
+      while (currentLevel > level) {
+        currentList = currentList.parentElement.parentElement;
+        currentLevel--;
+      }
+
+      // Create list item and link
+      var listItem = document.createElement('li');
+      var link = document.createElement('a');
+      link.textContent = heading.textContent;
+      link.href = '#' + heading.id;
+      listItem.appendChild(link);
+      currentList.appendChild(listItem);
+
     });
-    tocContainer.appendChild(tocList);
     main.parentElement.insertBefore(tocContainer, main);
   }
 
