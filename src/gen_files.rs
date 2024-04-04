@@ -3,7 +3,7 @@ use serde_json;
 use std::fs::{self, create_dir_all, File};
 use std::io::prelude::*;
 use std::io::BufWriter;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::config::Config;
 use crate::gen_html::{read_md_files, Doc};
@@ -18,31 +18,15 @@ pub(crate) fn cmd_gen(cfg: &Config) {
     for src in cfg.get_sources() {
         read_md_files(&mut docs, src.as_path());
     }
+    let template: Vec<&str> = TMPL.split(&"XXX").collect();
     for d in &docs {
-        write_html_doc(&output, &d).expect("write html");
+        let output_file_path = output.join(&d.html_path());
+        write_html_doc(&output_file_path, &template, &"../", &d).expect("write html");
     }
 
     write_index_file(&output, &docs, cfg).unwrap();
     write_static_files(&output).unwrap();
     write_globals_file(&output, &docs).unwrap();
-}
-
-fn write_html_doc(output_dir: &PathBuf, d: &Doc) -> Result<(), std::io::Error> {
-    let html_path = d.html_path();
-    let out_path = create_output_file(&html_path, output_dir)?;
-    let title = &d.title;
-    let content = &d.html;
-    let json: &str = &serde_json::to_string(&d)?;
-    let fh = File::create(&out_path)?;
-    let mut st = BufWriter::new(fh);
-    st.write(TMPL[0].as_bytes())?;
-    st.write(title.as_bytes())?;
-    st.write(TMPL[1].as_bytes())?;
-    st.write(json.as_bytes())?;
-    st.write(TMPL[2].as_bytes())?;
-    st.write(content.as_bytes())?;
-    st.write(TMPL[3].as_bytes())?;
-    Ok(())
 }
 
 fn write_globals_file(output_dir: &PathBuf, docs: &Vec<Doc>) -> Result<(), std::io::Error> {
@@ -87,41 +71,61 @@ fn write_index_file(
                 new_html.push_str(&"\n</section></div>\n");
                 new_html.push_str(b);
                 html = new_html;
+                fs::write(output_dir.join("index.html"), html)?;
             }
             None => {
                 warn!("Frontpage not found: {}", did);
+                fs::write(output_dir.join("index.html"), html)?;
             }
         }
+    } else {
+        fs::write(output_dir.join("index.html"), html)?;
     }
-    fs::write(output_dir.join("index.html"), html)?;
     Ok(())
 }
 
-const TMPL: [&'static str; 4] = [
-    r#"<!DOCTYPE html>
+fn write_html_doc(
+    output_file_path: &PathBuf,
+    template: &Vec<&str>,
+    path_prefix: &str,
+    d: &Doc,
+) -> Result<(), std::io::Error> {
+    create_dir_all(&output_file_path.parent().unwrap())?;
+    let title = &d.title;
+    let content = &d.html;
+    let json: &str = &serde_json::to_string(&d)?;
+    let fh = File::create(&output_file_path)?;
+    let mut st = BufWriter::new(fh);
+    st.write(template[0].as_bytes())?;
+    st.write(title.as_bytes())?;
+    st.write(template[1].as_bytes())?;
+    st.write(path_prefix.as_bytes())?;
+    st.write(template[2].as_bytes())?;
+    st.write(path_prefix.as_bytes())?;
+    st.write(template[3].as_bytes())?;
+    st.write(path_prefix.as_bytes())?;
+    st.write(template[4].as_bytes())?;
+    st.write(json.as_bytes())?;
+    st.write(template[5].as_bytes())?;
+    st.write(content.as_bytes())?;
+    st.write(template[6].as_bytes())?;
+    Ok(())
+}
+
+const TMPL: &str = r#"<!DOCTYPE html>
 <html><head>
-<title>"#,
-    r#"</title>
+<title>XXX</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" /></head>
-<link href="../docdustry_static/default.css" rel="stylesheet">
-<script src="../docdustry_static/default.js" type="text/javascript" defer></script>
-<script src="../docdustry_static/globals.js" type="text/javascript" defer></script>
-<script type="text/javascript">const DOCDUSTRY_LOCALS = "#,
-    r#";</script>
+<link href="XXXdocdustry_static/default.css" rel="stylesheet">
+<script src="XXXdocdustry_static/default.js" type="text/javascript" defer></script>
+<script src="XXXdocdustry_static/globals.js" type="text/javascript" defer></script>
+<script type="text/javascript">const DOCDUSTRY_LOCALS = XXX;</script>
 <body><header></header>
 <div class="page">
-<section class="main">"#,
-    r#"</section>
+<section class="main">XXX</section>
 </div>
-<footer></footer></body></html>"#,
-];
+<footer></footer></body></html>"#;
 const CSS: &'static [u8] = include_bytes!("default.css");
 const JS: &'static [u8] = include_bytes!("default.js");
 const INDEX_HTML: &'static str = include_str!("index.html");
-
-fn create_output_file(html_path: &Path, output_dir: &PathBuf) -> Result<PathBuf, std::io::Error> {
-    let output_file_path = output_dir.join(html_path);
-    create_dir_all(&output_file_path.parent().unwrap())?;
-    Ok(output_file_path)
-}

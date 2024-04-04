@@ -4,9 +4,8 @@ use pulldown_cmark::Parser;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use std::collections::{HashMap, VecDeque};
-use std::fs::{read_to_string, File};
-use std::io::prelude::*;
-use std::io::{self, BufWriter};
+use std::fs::read_to_string;
+use std::io::{self};
 use std::path::{Path, PathBuf};
 
 #[derive(serde::Serialize)]
