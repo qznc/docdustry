@@ -15,6 +15,7 @@ window.addEventListener("load", (event) => {
   }
 
   const main = document.querySelector('section.main');
+  console.log("main:", main);
   // linking via DID
   if (main) {
     main.querySelectorAll("a[href]").forEach(function(e) {
@@ -34,7 +35,6 @@ window.addEventListener("load", (event) => {
       }
     });
   }
-
 
   // table of contents
   if (main) {
@@ -125,6 +125,7 @@ window.addEventListener("load", (event) => {
 
   const searchInput = document.getElementById('searchInput');
   const searchResultsContainer = document.getElementById('searchResults');
+  console.log("searching via", searchInput, searchResultsContainer);
   // search box
   if (searchInput && searchResultsContainer) {
 
@@ -147,6 +148,7 @@ window.addEventListener("load", (event) => {
     }
 
     function renderResults(results) {
+      console.log("render results");
       if (results.length === 0) {
         searchResultsContainer.innerHTML = '<p>No results found.</p>';
         searchResultsContainer.classList.add("empty");

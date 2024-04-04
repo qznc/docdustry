@@ -22,7 +22,6 @@ struct Cli {
 fn main() {
     env_logger::init();
     let args = Cli::parse();
-    println!("Command: {}", args.command);
 
     let mut cfg = config::Config::new();
 
@@ -35,6 +34,8 @@ fn main() {
                         cfg.push_source_dir(PathBuf::from(v));
                     } else if k == "output" {
                         cfg.output = PathBuf::from(v);
+                    } else if k == "frontpage" {
+                        cfg.frontpage = Some(v.to_string());
                     } else {
                         println!("[{:?}] {}:{}", sec, k, v);
                     }

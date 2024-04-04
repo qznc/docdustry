@@ -3,6 +3,7 @@ use std::path::PathBuf;
 pub struct Config {
     sources: Vec<PathBuf>,
     pub output: PathBuf,
+    pub frontpage: Option<String>,
 }
 
 impl Config {
@@ -10,6 +11,7 @@ impl Config {
         Config {
             sources: vec![],
             output: PathBuf::from(&"out/"),
+            frontpage: None,
         }
     }
 

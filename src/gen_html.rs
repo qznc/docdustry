@@ -23,7 +23,7 @@ pub struct Doc {
     #[serde(skip)]
     raw: String,
     #[serde(skip)]
-    html: String,
+    pub html: String,
     #[serde(skip)]
     pub src_path_rel: PathBuf,
     #[serde(skip)]
@@ -381,10 +381,6 @@ impl Doc {
                 }
             }
         }
-    }
-
-    pub(crate) fn write_html(&self, st: &mut BufWriter<File>) -> Result<usize, io::Error> {
-        st.write(self.html.as_bytes())
     }
 
     pub fn shorthash(&self) -> String {

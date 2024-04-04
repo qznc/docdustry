@@ -1,4 +1,4 @@
-use log::info;
+use log::{info, warn};
 use serde_json;
 use std::fs::{self, create_dir_all, File};
 use std::io::prelude::*;
@@ -22,6 +22,7 @@ pub(crate) fn cmd_gen(cfg: &Config) {
         write_html_doc(&output, &d).expect("write html");
     }
 
+    write_index_file(&output, &docs, cfg).unwrap();
     write_static_files(&output).unwrap();
     write_globals_file(&output, &docs).unwrap();
 }
@@ -29,14 +30,17 @@ pub(crate) fn cmd_gen(cfg: &Config) {
 fn write_html_doc(output_dir: &PathBuf, d: &Doc) -> Result<(), std::io::Error> {
     let html_path = d.html_path();
     let out_path = create_output_file(&html_path, output_dir)?;
+    let title = &d.title;
+    let content = &d.html;
+    let json: &str = &serde_json::to_string(&d)?;
     let fh = File::create(&out_path)?;
     let mut st = BufWriter::new(fh);
     st.write(TMPL[0].as_bytes())?;
-    st.write(d.title.as_bytes())?;
+    st.write(title.as_bytes())?;
     st.write(TMPL[1].as_bytes())?;
-    st.write(serde_json::to_string(&d)?.as_bytes())?;
+    st.write(json.as_bytes())?;
     st.write(TMPL[2].as_bytes())?;
-    d.write_html(&mut st)?;
+    st.write(content.as_bytes())?;
     st.write(TMPL[3].as_bytes())?;
     Ok(())
 }
@@ -60,11 +64,36 @@ fn write_globals_file(output_dir: &PathBuf, docs: &Vec<Doc>) -> Result<(), std::
 }
 
 fn write_static_files(output_dir: &PathBuf) -> Result<(), std::io::Error> {
-    fs::write(output_dir.join("index.html"), INDEX_HTML)?;
     let dir = output_dir.join("docdustry_static");
     create_dir_all(&dir)?;
     fs::write(dir.join("default.css"), CSS)?;
     fs::write(dir.join("default.js"), JS)?;
+    Ok(())
+}
+
+fn write_index_file(
+    output_dir: &PathBuf,
+    docs: &Vec<Doc>,
+    cfg: &Config,
+) -> Result<(), std::io::Error> {
+    let mut html = INDEX_HTML.to_string();
+    if let Some(did) = cfg.frontpage.clone() {
+        match docs.iter().find(|d| d.did == did) {
+            Some(d) => {
+                let (a, b) = INDEX_HTML.split_once("\n</div>\n").unwrap();
+                let mut new_html = a.to_string();
+                new_html.push_str(&"\n<section class=\"main\">\n");
+                new_html.push_str(&d.html);
+                new_html.push_str(&"\n</section></div>\n");
+                new_html.push_str(b);
+                html = new_html;
+            }
+            None => {
+                warn!("Frontpage not found: {}", did);
+            }
+        }
+    }
+    fs::write(output_dir.join("index.html"), html)?;
     Ok(())
 }
 
@@ -89,7 +118,7 @@ const TMPL: [&'static str; 4] = [
 ];
 const CSS: &'static [u8] = include_bytes!("default.css");
 const JS: &'static [u8] = include_bytes!("default.js");
-const INDEX_HTML: &'static [u8] = include_bytes!("index.html");
+const INDEX_HTML: &'static str = include_str!("index.html");
 
 fn create_output_file(html_path: &Path, output_dir: &PathBuf) -> Result<PathBuf, std::io::Error> {
     let output_file_path = output_dir.join(html_path);
