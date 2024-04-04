@@ -15,7 +15,6 @@ window.addEventListener("load", (event) => {
   }
 
   const main = document.querySelector('section.main');
-  console.log("main:", main);
   // linking via DID
   if (main) {
     main.querySelectorAll("a[href]").forEach(function(e) {
@@ -123,9 +122,19 @@ window.addEventListener("load", (event) => {
     footer.innerHTML = "<p>The footer</p>";
   }
 
+  var is_frontpage = false;
+  {
+    var scripts = document.getElementsByTagName('script');
+    for (const s of scripts) {
+      const src = s.getAttribute("src");
+      if (src && src.includes("docdustry_static/") && !src.startsWith("../")) {
+        is_frontpage = true;
+      }
+    }
+  }
+
   const searchInput = document.getElementById('searchInput');
   const searchResultsContainer = document.getElementById('searchResults');
-  console.log("searching via", searchInput, searchResultsContainer);
   // search box
   if (searchInput && searchResultsContainer) {
 
@@ -148,7 +157,6 @@ window.addEventListener("load", (event) => {
     }
 
     function renderResults(results) {
-      console.log("render results");
       if (results.length === 0) {
         searchResultsContainer.innerHTML = '<p>No results found.</p>';
         searchResultsContainer.classList.add("empty");
@@ -159,7 +167,7 @@ window.addEventListener("load", (event) => {
 
       const html = results.map(doc => {
         var url = doc.url;
-        if (DOCDUSTRY_LOCALS.did === undefined) {
+        if (is_frontpage) {
           url = url.replace('../', '');
         }
         return `<div><a href="${url}">${doc.title}</a></div>`;

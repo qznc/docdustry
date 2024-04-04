@@ -24,7 +24,7 @@ pub(crate) fn cmd_gen(cfg: &Config) {
         write_html_doc(&output_file_path, &template, &"../", &d).expect("write html");
     }
 
-    write_index_file(&output, &docs, cfg).unwrap();
+    write_index_file(&output, &template, &docs, cfg).unwrap();
     write_static_files(&output).unwrap();
     write_globals_file(&output, &docs).unwrap();
 }
@@ -57,30 +57,26 @@ fn write_static_files(output_dir: &PathBuf) -> Result<(), std::io::Error> {
 
 fn write_index_file(
     output_dir: &PathBuf,
+    template: &Vec<&str>,
     docs: &Vec<Doc>,
     cfg: &Config,
 ) -> Result<(), std::io::Error> {
-    let mut html = INDEX_HTML.to_string();
+    let output_file_path = output_dir.join(&"index.html");
     if let Some(did) = cfg.frontpage.clone() {
         match docs.iter().find(|d| d.did == did) {
             Some(d) => {
-                let (a, b) = INDEX_HTML.split_once("\n</div>\n").unwrap();
-                let mut new_html = a.to_string();
-                new_html.push_str(&"\n<section class=\"main\">\n");
-                new_html.push_str(&d.html);
-                new_html.push_str(&"\n</section></div>\n");
-                new_html.push_str(b);
-                html = new_html;
-                fs::write(output_dir.join("index.html"), html)?;
+                info!("output {}", &output_file_path.display());
+                write_html_doc(&output_file_path, template, &"", d).unwrap();
+                return Ok(());
             }
             None => {
                 warn!("Frontpage not found: {}", did);
-                fs::write(output_dir.join("index.html"), html)?;
             }
         }
-    } else {
-        fs::write(output_dir.join("index.html"), html)?;
-    }
+    };
+    let mut doc = Doc::new(PathBuf::from(output_dir), PathBuf::from("index.html"));
+    doc.html = "<p>Please search!</p>".to_string();
+    write_html_doc(&output_file_path, template, &"", &doc).unwrap();
     Ok(())
 }
 
@@ -128,4 +124,3 @@ const TMPL: &str = r#"<!DOCTYPE html>
 <footer></footer></body></html>"#;
 const CSS: &'static [u8] = include_bytes!("default.css");
 const JS: &'static [u8] = include_bytes!("default.js");
-const INDEX_HTML: &'static str = include_str!("index.html");

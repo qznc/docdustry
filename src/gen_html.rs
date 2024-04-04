@@ -32,7 +32,7 @@ pub struct Doc {
 }
 
 impl Doc {
-    fn new(src_path_base: PathBuf, src_path_rel: PathBuf) -> Doc {
+    pub fn new(src_path_base: PathBuf, src_path_rel: PathBuf) -> Doc {
         Doc {
             src_path_rel,
             src_path_base,
