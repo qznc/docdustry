@@ -38,6 +38,8 @@ fn main() {
                                 cfg.output = PathBuf::from(v);
                             } else if k == "frontpage" {
                                 cfg.frontpage = Some(v.to_string());
+                            } else if k == "theme" {
+                                cfg.theme = Some(PathBuf::from(v.to_string()));
                             } else {
                                 println!("[{:?}] {}:{}", sec, k, v);
                             }

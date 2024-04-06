@@ -1,0 +1,32 @@
+/** LAYOUT **/
+
+section.main a[href^="//"]::before,
+section.main a[href^="https://"]::before,
+section.main a[href^="http://"]::before { content: '🌐'; opacity: 0.5; font-size: 0.7em; }
+section.main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-size: 0.8em; }
+
+/** COLORS **/
+section.main code,
+section.main pre { background-color: #eee; }
+
+section.main blockquote { border-left: 1em solid #eee; }
+
+article.inclusion { border: 1px solid #000; border-width: 1px 0 0 1px; }
+
+#searchResults { background-color: #fff; }
+
+header #searchResults,
+header,
+header a,
+footer a,
+footer { background-color: #555; color: #fff; }
+
+section.main pre.language-docdustry-docmeta>code,
+section.main pre.language-docdustry-docmeta { background-color: #aaa; color: #fff; font-weight: 300; }
+
+p.error { background-color: #f99; }
+
+/** FONTS **/
+body { font-family: Helvetica, "Helvetica Neue", Roboto, "Liberation Sans", "DejaVu Sans Condensed", "Nimbus Sans", "Nimbus Sans L", sans-serif; }
+code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
+

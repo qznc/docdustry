@@ -34,7 +34,7 @@ pub(crate) fn cmd_gen(cfg: &Config) {
     }
 
     write_index_file(&output, &template, &docs, cfg).unwrap();
-    write_static_files(&output).unwrap();
+    write_static_files(&output, &cfg.theme).unwrap();
     write_globals_file(&output, &docs).unwrap();
 }
 
@@ -72,12 +72,27 @@ fn write_globals_file(output_dir: &PathBuf, docs: &Vec<Doc>) -> Result<(), std::
     Ok(())
 }
 
-fn write_static_files(output_dir: &PathBuf) -> Result<(), std::io::Error> {
+fn write_static_files(output_dir: &PathBuf, theme: &Option<PathBuf>) -> Result<(), std::io::Error> {
     let dir = output_dir.join("docdustry_static");
     create_dir_all(&dir)?;
-    fs::write(dir.join("default.css"), CSS)?;
+    fs::write(dir.join("base.css"), CSS_BASE)?;
+    let theme_css = theme_css_content(theme);
+    fs::write(dir.join("theme.css"), theme_css)?;
     fs::write(dir.join("default.js"), JS)?;
     Ok(())
+}
+
+fn theme_css_content(theme: &Option<PathBuf>) -> Vec<u8> {
+    match theme {
+        Some(p) => match std::fs::read(&p) {
+            Ok(x) => x,
+            Err(_) => {
+                warn!("Failed to read theme css: {}", p.display());
+                CSS_THEME.to_vec()
+            }
+        },
+        None => CSS_THEME.to_vec(),
+    }
 }
 
 fn write_index_file(
@@ -126,10 +141,12 @@ fn write_html_doc(
     st.write(template[3].as_bytes())?;
     st.write(path_prefix.as_bytes())?;
     st.write(template[4].as_bytes())?;
-    st.write(json.as_bytes())?;
+    st.write(path_prefix.as_bytes())?;
     st.write(template[5].as_bytes())?;
-    st.write(content.as_bytes())?;
+    st.write(json.as_bytes())?;
     st.write(template[6].as_bytes())?;
+    st.write(content.as_bytes())?;
+    st.write(template[7].as_bytes())?;
     Ok(())
 }
 
@@ -138,7 +155,8 @@ const TMPL: &str = r#"<!DOCTYPE html>
 <title>XXX</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" /></head>
-<link href="XXXdocdustry_static/default.css" rel="stylesheet">
+<link href="XXXdocdustry_static/base.css" rel="stylesheet">
+<link href="XXXdocdustry_static/theme.css" rel="stylesheet">
 <script src="XXXdocdustry_static/default.js" type="text/javascript" defer></script>
 <script src="XXXdocdustry_static/globals.js" type="text/javascript" defer></script>
 <script type="text/javascript">const DOCDUSTRY_LOCALS = XXX;</script>
@@ -147,5 +165,6 @@ const TMPL: &str = r#"<!DOCTYPE html>
 <section class="main">XXX</section>
 </div>
 <footer></footer></body></html>"#;
-const CSS: &'static [u8] = include_bytes!("default.css");
+const CSS_BASE: &'static [u8] = include_bytes!("base.css");
+const CSS_THEME: &'static [u8] = include_bytes!("theme.css");
 const JS: &'static [u8] = include_bytes!("default.js");

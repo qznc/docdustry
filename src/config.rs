@@ -4,6 +4,7 @@ pub struct Config {
     sources: Vec<PathBuf>,
     pub output: PathBuf,
     pub frontpage: Option<String>,
+    pub theme: Option<PathBuf>,
 }
 
 impl Config {
@@ -12,6 +13,7 @@ impl Config {
             sources: vec![],
             output: PathBuf::from(&"out/"),
             frontpage: None,
+            theme: None,
         }
     }
 

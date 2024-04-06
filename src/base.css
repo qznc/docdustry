@@ -51,10 +51,7 @@ section.main pre { overflow-x: auto; padding: 2px 5px 2px 5px; }
 
 section.main blockquote { padding-left: 4px; }
 
-section.main a[href^="//"]::before,
-section.main a[href^="https://"]::before,
-section.main a[href^="http://"]::before { content: '🌐'; opacity: 0.5; font-size: 0.7em; }
-section.main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-size: 0.8em; }
+section.main pre.language-docdustry-docmeta { padding: 0 1em;}
 
 footer,
 header { height: calc(2*var(--base-line-height)); clear: both; }
@@ -63,28 +60,6 @@ article.inclusion { padding: 0 0 0 8px; }
 article.inclusion a.inclusion { float:right; font-size: 0.6em; }
 
 #docdustry-toc { max-width: 30%; padding: 1em; }
-
-/** COLORS **/
-section.main code,
-section.main pre { background-color: #eee; }
-
-section.main blockquote { border-left: 1em solid #eee; }
-
-article.inclusion { border: 1px solid #000; border-width: 1px 0 0 1px; }
-
-#searchResults { background-color: #fff; }
-
-header #searchResults,
-header,
-header a,
-footer a,
-footer { background-color: #555; color: #fff; }
-
-section.main pre.language-docdustry-docmeta>code,
-section.main pre.language-docdustry-docmeta { background-color: #aaa; color: #fff; font-weight: 300; }
-section.main pre.language-docdustry-docmeta { padding: 0 1em;}
-
-p.error { background-color: #f99; }
 
 /** FONTS **/
 body { font-size: var(--base-font-size); line-height: var(--base-line-height); }
@@ -96,9 +71,6 @@ h5 { font-size: 0.9em; }
 section.main summary { font-size: 0.8em; }
 h6 { font-weight: normal; }
 h1, h2, h3 { line-height: calc(2*var(--base-line-height)); }
-
-body { font-family: Helvetica, "Helvetica Neue", Roboto, "Liberation Sans", "DejaVu Sans Condensed", "Nimbus Sans", "Nimbus Sans L", sans-serif; }
-code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
 
 section.main { font-variant-numeric: oldstyle-nums slashed-zero; }
 header a,
