@@ -29,16 +29,22 @@ fn main() {
         if ini_path.exists() {
             let i = Ini::load_from_file(ini_path).unwrap();
             for (sec, prop) in i.iter() {
-                for (k, v) in prop.iter() {
-                    if k == "sources" {
-                        cfg.push_source_dir(PathBuf::from(v));
-                    } else if k == "output" {
-                        cfg.output = PathBuf::from(v);
-                    } else if k == "frontpage" {
-                        cfg.frontpage = Some(v.to_string());
-                    } else {
-                        println!("[{:?}] {}:{}", sec, k, v);
+                match sec {
+                    Some("gen") => {
+                        for (k, v) in prop.iter() {
+                            if k == "sources" {
+                                cfg.push_source_dir(PathBuf::from(v));
+                            } else if k == "output" {
+                                cfg.output = PathBuf::from(v);
+                            } else if k == "frontpage" {
+                                cfg.frontpage = Some(v.to_string());
+                            } else {
+                                println!("[{:?}] {}:{}", sec, k, v);
+                            }
+                        }
                     }
+                    Some(_) => (),
+                    None => (),
                 }
             }
         } else {
