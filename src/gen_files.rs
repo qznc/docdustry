@@ -19,14 +19,39 @@ pub(crate) fn cmd_gen(cfg: &Config) {
         read_md_files(&mut docs, src.as_path());
     }
     let template: Vec<&str> = TMPL.split(&"XXX").collect();
+    let inverse_output = invert_path(&output);
     for d in &docs {
         let output_file_path = output.join(&d.html_path());
         write_html_doc(&output_file_path, &template, &"../", &d).expect("write html");
+        for media in &d.media {
+            let tgt = PathBuf::from("..").join(&inverse_output).join(media);
+            let symlink = output_file_path
+                .parent()
+                .unwrap()
+                .join(&media.file_name().unwrap());
+            std::os::unix::fs::symlink(tgt, symlink).unwrap();
+        }
     }
 
     write_index_file(&output, &template, &docs, cfg).unwrap();
     write_static_files(&output).unwrap();
     write_globals_file(&output, &docs).unwrap();
+}
+
+// Inverts a path, assuming it is relative to the current dir
+// Example: ../foo becomes ../src if your are currently in src/
+fn invert_path(output: &PathBuf) -> PathBuf {
+    let mut ret = PathBuf::new();
+    let mut cur = PathBuf::from(".").canonicalize().unwrap();
+    for c in output.components() {
+        if c.as_os_str().to_str().unwrap() == ".." {
+            ret = ret.join(cur.file_name().unwrap());
+            cur = cur.parent().unwrap().to_path_buf();
+        } else {
+            ret = ret.join(&"..");
+        }
+    }
+    ret
 }
 
 fn write_globals_file(output_dir: &PathBuf, docs: &Vec<Doc>) -> Result<(), std::io::Error> {

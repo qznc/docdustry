@@ -15,10 +15,13 @@ pub struct Doc {
     pub title: String,
     pub status: String,
     pub links: Vec<String>,
-    pub includes: Vec<String>,
     pub tags: Vec<String>,
     pub url: String,
+    // other pages getting included via DID
+    pub includes: Vec<String>,
 
+    #[serde(skip)]
+    pub media: Vec<PathBuf>,
     #[serde(skip)]
     raw: String,
     #[serde(skip)]
@@ -46,6 +49,7 @@ impl Doc {
             includes: vec![],
             raw: String::new(),
             redo: false,
+            media: vec![],
         }
     }
 
@@ -226,9 +230,16 @@ impl Doc {
             // normal image
             self.html.push_str(&"<img");
             if !dest_url.is_empty() {
+                let as_path = PathBuf::from(dest_url.to_string());
+                let filename = as_path.file_name();
                 self.html.push_str(" src=\"");
-                self.html.push_str(&dest_url);
+                self.html.push_str(&filename.unwrap().to_str().unwrap());
                 self.html.push('"');
+                let path = self
+                    .src_path_base
+                    .join(&self.src_path_rel.parent().unwrap())
+                    .join(&dest_url.to_string());
+                self.media.push(path);
             }
             if !id.is_empty() {
                 self.html.push_str(" id=\"");
