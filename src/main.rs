@@ -1,6 +1,6 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use ini::Ini;
-use log::{error, info, warn};
+use log::{info, warn};
 use std::path::{Path, PathBuf};
 
 mod config;
@@ -12,12 +12,22 @@ mod spam_md;
 #[derive(Parser)]
 struct Cli {
     /// Subcommand
-    #[arg(default_value = "gen")]
-    command: String,
+    #[clap(subcommand)]
+    command: Command,
 
     /// Config file in ini format
     #[arg(short = 'i', long = "ini")]
     ini: Option<PathBuf>,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Generate HTML documentation
+    Gen {},
+    /// Generate Sqlite3 table
+    GenDB {},
+    /// Generate random spam
+    SpamMd {},
 }
 
 fn main() {
@@ -57,10 +67,9 @@ fn main() {
         info!("No config file given.");
     }
 
-    match args.command.as_str() {
-        "gen" => gen_files::cmd_gen(&cfg),
-        "gen-db" => gen_db::cmd_gen_db(&cfg),
-        "spam_md" => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
-        _ => error!("Unknown command {}", args.command),
+    match args.command {
+        Command::Gen {} => gen_files::cmd_gen(&cfg),
+        Command::GenDB {} => gen_db::cmd_gen_db(&cfg),
+        Command::SpamMd {} => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
     }
 }
