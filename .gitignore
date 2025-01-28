@@ -3,3 +3,4 @@ out/
 node_modules/
 package.json
 package-lock.json
+db.sqlite3

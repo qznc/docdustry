@@ -4,6 +4,7 @@ use log::{error, info, warn};
 use std::path::{Path, PathBuf};
 
 mod config;
+mod gen_db;
 mod gen_files;
 mod gen_html;
 mod spam_md;
@@ -41,7 +42,7 @@ fn main() {
                             } else if k == "theme" {
                                 cfg.theme = Some(PathBuf::from(v.to_string()));
                             } else {
-                                println!("[{:?}] {}:{}", sec, k, v);
+                                warn!("Unknown config [gen] {}:{}", k, v);
                             }
                         }
                     }
@@ -58,6 +59,7 @@ fn main() {
 
     match args.command.as_str() {
         "gen" => gen_files::cmd_gen(&cfg),
+        "gen-db" => gen_db::cmd_gen_db(&cfg),
         "spam_md" => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
         _ => error!("Unknown command {}", args.command),
     }

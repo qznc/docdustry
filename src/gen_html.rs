@@ -23,7 +23,7 @@ pub struct Doc {
     #[serde(skip)]
     pub media: Vec<PathBuf>,
     #[serde(skip)]
-    raw: String,
+    pub raw: String,
     #[serde(skip)]
     pub html: String,
     #[serde(skip)]

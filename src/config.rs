@@ -3,6 +3,7 @@ use std::path::PathBuf;
 pub struct Config {
     sources: Vec<PathBuf>,
     pub output: PathBuf,
+    pub db_path: PathBuf,
     pub frontpage: Option<String>,
     pub theme: Option<PathBuf>,
 }
@@ -12,6 +13,7 @@ impl Config {
         Config {
             sources: vec![],
             output: PathBuf::from(&"out/"),
+            db_path: PathBuf::from(&"db.sqlite3"),
             frontpage: None,
             theme: None,
         }
