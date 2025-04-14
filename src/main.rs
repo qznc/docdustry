@@ -1,12 +1,15 @@
 use clap::{Parser, Subcommand};
 use ini::Ini;
 use log::{info, warn};
+use serve::cmd_serve;
 use std::path::{Path, PathBuf};
 
 mod config;
+mod database;
 mod gen_db;
 mod gen_files;
 mod gen_html;
+mod serve;
 mod spam_md;
 
 #[derive(Parser)]
@@ -26,6 +29,8 @@ enum Command {
     Gen {},
     /// Generate Sqlite3 table
     GenDB {},
+    /// Start a web server from db content
+    Serve {},
     /// Generate random spam
     SpamMd {},
 }
@@ -71,5 +76,6 @@ fn main() {
         Command::Gen {} => gen_files::cmd_gen(&cfg),
         Command::GenDB {} => gen_db::cmd_gen_db(&cfg),
         Command::SpamMd {} => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
+        Command::Serve {} => cmd_serve(cfg),
     }
 }
