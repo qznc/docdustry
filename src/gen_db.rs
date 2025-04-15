@@ -13,7 +13,6 @@ pub(crate) fn cmd_gen_db(cfg: &Config) {
     for did in docs.keys() {
         let raw = docs.get(did).unwrap();
         if raw != "" {
-            debug!("insert DID {}", did);
             let query = "INSERT OR REPLACE INTO documents (did,raw) VALUES (?,?);";
             let mut stmt = db.prepare(query).unwrap();
             stmt.bind((1, did.as_str())).unwrap();
@@ -62,10 +61,15 @@ fn read_md_files(docs: &mut HashMap<String, String>, src_path_base: &std::path::
             Err(err) => error!("Not an entry: {}", err),
         }
     }
-    info!("Found {} md files", docs.len());
+    info!(
+        "Now {} docs after reading {}",
+        docs.len(),
+        src_path_base.display()
+    );
 }
 
 fn parse_did(meta: &String) -> String {
+    let mut did = String::new();
     for line in meta.split("\n") {
         if let Some((k, v)) = line.split_once(":") {
             match k {
@@ -75,6 +79,12 @@ fn parse_did(meta: &String) -> String {
                 _ => (),
             }
         }
+        if did.is_empty() {
+            if let Some(title) = line.strip_prefix("# ") {
+                // Markdown title can be substitute DID
+                did = title.replace(" ", "_").to_ascii_lowercase();
+            }
+        }
     }
-    "unknown".to_string()
+    did
 }

@@ -1,6 +1,6 @@
 use crate::{config::Config, database::Database};
 use log::{debug, info, warn};
-use pulldown_cmark::{CowStr, Event, Parser, Tag, TagEnd};
+use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use rouille::Response;
 use std::collections::HashMap;
@@ -39,10 +39,6 @@ fn render(cfg: &Config, did: &str) -> Option<String> {
     };
     let dids = get_dids(did, db);
     debug!("DIDs needed: {:?}", dids.keys());
-    for k in dids.keys() {
-        let v = dids.get(k).unwrap();
-        debug!("did {} -> {}", k, v);
-    }
     let base = dids.get(did).unwrap();
     Some(markdown_to_html(base, &dids))
 }
@@ -97,10 +93,10 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
                     html.push_str("\">");
                 }
                 Tag::Image {
-                    link_type,
+                    link_type: _,
                     dest_url,
-                    title,
-                    id,
+                    title: _,
+                    id: _,
                 } => {
                     let durl = dest_url.to_string();
                     if dest_url.starts_with("did:") {
@@ -123,19 +119,22 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
                 Tag::MetadataBlock(_) => (),
             },
             Event::End(tag) => match tag {
-                TagEnd::Paragraph => html.push_str("</p>"),
+                TagEnd::Paragraph => html.push_str("</p>\n"),
                 TagEnd::Heading(level) => {
                     html.push_str("</");
                     html.push_str(&level.to_string());
-                    html.push_str(">");
+                    html.push_str(">\n");
                 }
-                TagEnd::BlockQuote => html.push_str("</blockquote>"),
-                TagEnd::CodeBlock => html.push_str("</code></pre>"),
-                TagEnd::HtmlBlock => html.push_str("</div>"),
-                TagEnd::List(_) => html.push_str("</ul>"),
+                TagEnd::BlockQuote => html.push_str("</blockquote>\n"),
+                TagEnd::CodeBlock => html.push_str("</code></pre>\n"),
+                TagEnd::HtmlBlock => html.push_str("</div>\n"),
+                TagEnd::List(ordered) => match ordered {
+                    true => html.push_str("</ol>\n"),
+                    false => html.push_str("</ul>\n"),
+                },
                 TagEnd::Item => html.push_str("</li>"),
-                TagEnd::FootnoteDefinition => html.push_str("</div>"),
-                TagEnd::Table => html.push_str("</table>"),
+                TagEnd::FootnoteDefinition => html.push_str("</div>\n"),
+                TagEnd::Table => html.push_str("</table>\n"),
                 TagEnd::TableHead => html.push_str("</thead>"),
                 TagEnd::TableRow => html.push_str("</tr>"),
                 TagEnd::TableCell => html.push_str("</td>"),
@@ -159,11 +158,11 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
                 html.push_str(&name);
                 html.push_str("\">");
                 html.push_str(&name);
-                html.push_str("</a></sup>");
+                html.push_str("</a></sup>\n");
             }
-            Event::SoftBreak => html.push_str("<br />"),
-            Event::HardBreak => html.push_str("<br />"),
-            Event::Rule => html.push_str("<hr />"),
+            Event::SoftBreak => html.push_str("\n"),
+            Event::HardBreak => html.push_str("<br />\n"),
+            Event::Rule => html.push_str("<hr />\n"),
             Event::TaskListMarker(checked) => {
                 html.push_str("<input type=\"checkbox\" disabled");
                 if checked {
@@ -188,10 +187,10 @@ fn get_dids(did: &str, db: Database) -> HashMap<String, String> {
             match event {
                 Event::Start(tag) => match tag {
                     Tag::Image {
-                        link_type,
+                        link_type: _,
                         dest_url,
-                        title,
-                        id,
+                        title: _,
+                        id: _,
                     } => {
                         let durl = dest_url.to_string();
                         if dest_url.starts_with("did:") {

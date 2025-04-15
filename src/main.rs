@@ -39,9 +39,20 @@ fn main() {
     env_logger::init();
     let args = Cli::parse();
 
+    let cfg = load_config_file(&args);
+
+    match args.command {
+        Command::Gen {} => gen_files::cmd_gen(&cfg),
+        Command::GenDB {} => gen_db::cmd_gen_db(&cfg),
+        Command::SpamMd {} => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
+        Command::Serve {} => cmd_serve(cfg),
+    }
+}
+
+fn load_config_file(args: &Cli) -> config::Config {
     let mut cfg = config::Config::new();
 
-    if let Some(ini_path) = args.ini {
+    if let Some(ini_path) = args.ini.clone() {
         if ini_path.exists() {
             let i = Ini::load_from_file(ini_path).unwrap();
             for (sec, prop) in i.iter() {
@@ -71,11 +82,5 @@ fn main() {
     } else {
         info!("No config file given.");
     }
-
-    match args.command {
-        Command::Gen {} => gen_files::cmd_gen(&cfg),
-        Command::GenDB {} => gen_db::cmd_gen_db(&cfg),
-        Command::SpamMd {} => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
-        Command::Serve {} => cmd_serve(cfg),
-    }
+    cfg
 }
