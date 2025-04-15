@@ -3,7 +3,7 @@ use log::{debug, info, warn};
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use rouille::Response;
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, path::PathBuf};
 
 pub(crate) fn cmd_serve(cfg: Config) {
     let addr = "0.0.0.0:8081";
@@ -15,6 +15,9 @@ pub(crate) fn cmd_serve(cfg: Config) {
             return Response::empty_404();
         }
         let url = request.url();
+        if let Some(sub_url) = url.strip_prefix("/_static/") {
+            return static_file(&cfg.serve.theme, sub_url);
+        }
         let did: &str = if request.url() == "/" {
             "default"
         } else {
@@ -29,6 +32,38 @@ pub(crate) fn cmd_serve(cfg: Config) {
     });
 }
 
+fn static_file(theme_dir: &PathBuf, url: &str) -> Response {
+    let mut path = theme_dir.clone();
+    path.push(url);
+    let ext: &str = path.extension().unwrap().to_str().unwrap();
+    debug!("Load {:?}", path);
+    let file = File::open(&path).unwrap();
+    let typ = match ext {
+        "png" => "image/png",
+        "jpg" => "image/jpg",
+        "css" => "text/css",
+        "js" => "text/javascript",
+        _ => "text/html",
+    };
+    Response::from_file(typ, file)
+}
+
+const TEMPLATE: &str = "<!DOCTYPE html>
+<html>
+<head>
+<title>TITLE</title>
+<meta charset=\"utf-8\" />
+<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
+<script src=\"_static/theme.js\"></script>
+<link rel=\"stylesheet\" type=\"text/css\" href=\"_static/theme.css\" />
+</head>
+<body>
+<header></header>
+<main>CONTENT</main>
+<footer></footer>
+</body>
+</html>";
+
 fn render(cfg: &Config, did: &str) -> Option<String> {
     let db = match Database::open(&cfg) {
         Ok(x) => x,
@@ -40,12 +75,14 @@ fn render(cfg: &Config, did: &str) -> Option<String> {
     let dids = get_dids(did, db);
     debug!("DIDs needed: {:?}", dids.keys());
     let base = dids.get(did).unwrap();
-    Some(markdown_to_html(base, &dids))
+    let content = markdown_to_html(base, &dids);
+    Some(TEMPLATE.replace("CONTENT", &content).replace("TITLE", did))
 }
 
 fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
     let mut html = String::new();
     let mut parser = Parser::new(markdown);
+    let mut including = false;
     while let Some(event) = parser.next() {
         match event {
             Event::Start(tag) => match tag {
@@ -105,7 +142,10 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
 
                         if let Some(inner_md) = dids.get(&inner_did.to_string()) {
                             let inner_html = markdown_to_html(inner_md, dids);
+                            html.push_str("<div class=\"inclusion\">");
                             html.push_str(inner_html.as_str());
+                            html.push_str("</div>\n");
+                            including = true;
                         } else {
                             warn!("Link to missing DID {}", inner_did);
                             html.push_str(format!("MISSING {}<br/>", inner_did).as_str());
@@ -142,10 +182,18 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
                 TagEnd::Strong => html.push_str("</strong>"),
                 TagEnd::Strikethrough => html.push_str("</del>"),
                 TagEnd::Link => html.push_str("</a>"),
-                TagEnd::Image => (),
+                TagEnd::Image => {
+                    if !including {
+                        html.push_str("</img>\n")
+                    }
+                }
                 TagEnd::MetadataBlock(_) => (),
             },
-            Event::Text(t) => escape_html(&mut html, &t).unwrap(),
+            Event::Text(t) => {
+                if !including {
+                    escape_html(&mut html, &t).unwrap()
+                }
+            }
             Event::Code(c) => {
                 html.push_str("<code>");
                 escape_html(&mut html, &c).unwrap();

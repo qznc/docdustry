@@ -1,11 +1,16 @@
 use std::path::PathBuf;
 
+pub struct ServeConfig {
+    pub theme: PathBuf,
+}
+
 pub struct Config {
     sources: Vec<PathBuf>,
     pub output: PathBuf,
     pub db_path: PathBuf,
     pub frontpage: Option<String>,
     pub theme: Option<PathBuf>,
+    pub serve: ServeConfig,
 }
 
 impl Config {
@@ -16,6 +21,9 @@ impl Config {
             db_path: PathBuf::from(&"db.sqlite3"),
             frontpage: None,
             theme: None,
+            serve: ServeConfig {
+                theme: PathBuf::from("theme/default"),
+            },
         }
     }
 

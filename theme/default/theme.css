@@ -1,0 +1,40 @@
+/** RESET **/
+
+/* Use a more-intuitive box-sizing model */
+*, *::before, *::after { box-sizing: border-box; }
+
+* { margin: 0; font-family: inherit; }
+
+/* Add accessible line-height */
+body { line-height: 1.5; }
+
+/* full height always */
+body { min-height: 100vh; }
+
+/* Anything that has been anchored to should have extra scroll margin */
+:target { scroll-margin-block: 5ex; }
+
+/* Inherit fonts for form controls */
+input, button, textarea, select { font: inherit; }
+
+/** LAYOUT **/
+
+main { max-width: 40em; padding: 1em; }
+
+main pre { padding: 0.2em 0.5em; }
+
+main p { margin-top: 1em; }
+
+div.inclusion { margin: 1em 0; padding: 0.5em 0.2em; border: 1px solid black; }
+
+/** FONTS, TYPOGRAPHY **/
+
+body { font-family: sans-serif; font-size: 18px; }
+pre, code { font-family: monospace; }
+
+/** COLORS **/
+
+body { background: #ddd; }
+main { background: #fff; }
+main pre { background: #eee; }
+
