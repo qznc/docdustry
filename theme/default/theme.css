@@ -19,18 +19,28 @@ input, button, textarea, select { font: inherit; }
 
 /** LAYOUT **/
 
-main { max-width: 40em; padding: 1em; }
+main { max-width: 40em; padding: 1em; margin: 3px auto; }
 
-main pre { padding: 0.2em 0.5em; }
+main pre { padding: 0.2em 0.5em; margin-bottom: 1em; }
 
 main p { margin-top: 1em; }
 
-div.inclusion { margin: 1em 0; padding: 0.5em 0.2em; border: 1px solid black; }
+div.inclusion { margin: 1em 0; padding: 0.5em 0.2em; }
+
+.inclusion a.inclusion { float: right; }
+
+details.metainfo { margin: 1em 0 0 0; }
 
 /** FONTS, TYPOGRAPHY **/
 
 body { font-family: sans-serif; font-size: 18px; }
 pre, code { font-family: monospace; }
+
+main h1,
+main h2 { font-weight: normal; }
+
+details.metainfo summary,
+.inclusion a.inclusion { font-size: 0.8em;}
 
 /** COLORS **/
 
@@ -38,3 +48,4 @@ body { background: #ddd; }
 main { background: #fff; }
 main pre { background: #eee; }
 
+div.inclusion { border: 1px solid #ccc; }

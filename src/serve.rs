@@ -1,6 +1,6 @@
 use crate::{config::Config, database::Database};
 use log::{debug, info, warn};
-use pulldown_cmark::{CowStr, Event, Parser, Tag, TagEnd};
+use pulldown_cmark::{CowStr, Event, HeadingLevel, LinkType, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use rouille::Response;
 use std::{collections::HashMap, fs::File, path::PathBuf};
@@ -86,7 +86,10 @@ fn render(cfg: &Config, did: &str) -> Option<String> {
 fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
     let mut html = String::new();
     let mut parser = Parser::new(markdown);
+    // for img, remember if we are including a DID
     let mut including = false;
+    // for links to DIDs, remember title in case the text is empty:
+    let mut doc_title = String::new();
     while let Some(event) = parser.next() {
         match event {
             Event::Start(tag) => match tag {
@@ -129,14 +132,12 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                 Tag::Strong => html.push_str("<strong>"),
                 Tag::Strikethrough => html.push_str("<del>"),
                 Tag::Link {
-                    link_type: _,
+                    link_type,
                     dest_url,
-                    title: _,
-                    id: _,
+                    title,
+                    id,
                 } => {
-                    html.push_str("<a href=\"");
-                    html.push_str(&dest_url);
-                    html.push_str("\">");
+                    doc_title = to_html_link(&mut html, link_type, &dest_url, &title, &id, &dids);
                 }
                 Tag::Image {
                     link_type: _,
@@ -146,20 +147,25 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                 } => {
                     let durl = dest_url.to_string();
                     if dest_url.starts_with("did:") {
+                        including = true;
                         let inner_did = durl.strip_prefix("did:").unwrap();
                         debug!("include {}", inner_did);
-
                         if let Some(inner_md) = dids.get(&inner_did.to_string()) {
                             let inner_html = markdown_to_html(inner_md.raw.as_str(), dids);
-                            html.push_str("<div class=\"inclusion\">");
+                            html.push_str(
+                                "<div class=\"inclusion\"><a class=\"inclusion\" href=\"",
+                            );
+                            html.push_str(inner_did);
+                            html.push_str("\">inclusion</a>");
+
                             html.push_str(inner_html.as_str());
                             html.push_str("</div>\n");
-                            including = true;
                         } else {
                             warn!("Link to missing DID {}", inner_did);
                             html.push_str(format!("MISSING {}<br/>", inner_did).as_str());
                         }
                     } else {
+                        including = false;
                         html.push_str("<img src=\"");
                         html.push_str(&dest_url);
                         html.push_str("\" alt=\"image\">");
@@ -190,18 +196,29 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                 TagEnd::Emphasis => html.push_str("</em>"),
                 TagEnd::Strong => html.push_str("</strong>"),
                 TagEnd::Strikethrough => html.push_str("</del>"),
-                TagEnd::Link => html.push_str("</a>"),
+                TagEnd::Link => {
+                    if !doc_title.is_empty() {
+                        html.push_str(&doc_title);
+                        doc_title.clear();
+                    }
+                    html.push_str("</a>");
+                }
                 TagEnd::Image => {
-                    if !including {
+                    if including {
+                        including = false;
+                    } else {
                         html.push_str("</img>\n")
                     }
                 }
                 TagEnd::MetadataBlock(_) => (),
             },
             Event::Text(t) => {
-                if !including {
+                if including {
+                    // skip image text during inclusion
+                } else {
                     escape_html(&mut html, &t).unwrap()
                 }
+                doc_title.clear(); // no need at TagEnd::Link anymore
             }
             Event::Code(c) => {
                 html.push_str("<code>");
@@ -232,9 +249,57 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
     html
 }
 
+fn to_html_link(
+    html: &mut String,
+    _link_type: LinkType,
+    dest_url: &str,
+    title: &str,
+    id: &str,
+    dids: &HashMap<String, Doc>,
+) -> String {
+    let mut doc_title = String::new();
+    html.push_str("<a href=\"");
+    if let Some(did) = dest_url.strip_prefix("did:") {
+        html.push_str(&did);
+        doc_title = dids.get(did).unwrap().title.clone();
+    } else {
+        html.push_str(&dest_url);
+    }
+    html.push('"');
+    if !id.is_empty() {
+        html.push_str(&" id=\"");
+        html.push_str(&id);
+        html.push('"');
+    }
+    if !title.is_empty() {
+        html.push_str(&" title=\"");
+        html.push_str(&title);
+        html.push('"');
+    }
+    html.push('>');
+    doc_title
+}
+
 fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser) {
     match language {
-        // TODO handle special "languages"
+        "docdustry-docmeta" => {
+            html.push_str(&"<details class=\"metainfo\">");
+            html.push_str(&"<summary>doc meta info</summary>");
+            html.push_str(&"<pre class=\"docdustry-docmeta\"><code>");
+            while let Some(event) = parser.next() {
+                match event {
+                    Event::End(TagEnd::CodeBlock) => {
+                        html.push_str(&"</code></pre>");
+                        break;
+                    }
+                    Event::Text(t) => {
+                        escape_html(&mut *html, &t).unwrap();
+                    }
+                    _ => todo!(),
+                }
+            }
+            html.push_str(&"</details>\n");
+        }
         _ => html.push_str("<pre><code>"),
     }
 }
@@ -258,17 +323,23 @@ fn get_dids(did: &str, db: Database) -> HashMap<String, Doc> {
         while let Some(event) = parser.next() {
             match event {
                 Event::Start(tag) => match tag {
-                    Tag::Image {
-                        link_type: _,
-                        dest_url,
-                        title: _,
-                        id: _,
-                    } => {
-                        let durl = dest_url.to_string();
-                        if dest_url.starts_with("did:") {
-                            let inner_did = durl.strip_prefix("did:").unwrap();
-                            debug!("ref include {}", inner_did);
+                    Tag::Image { dest_url, .. } => {
+                        if let Some(inner_did) = dest_url.strip_prefix("did:") {
+                            debug!("ref img include {}", inner_did);
                             dids_todo.push(inner_did.to_string());
+                        }
+                    }
+                    Tag::Link { dest_url, .. } => {
+                        if let Some(inner_did) = dest_url.strip_prefix("did:") {
+                            debug!("ref a include {}", inner_did);
+                            dids_todo.push(inner_did.to_string());
+                        }
+                    }
+                    Tag::Heading { level, .. } => {
+                        if level == HeadingLevel::H1 {
+                            if let Some(Event::Text(t)) = parser.next() {
+                                doc.title = t.to_string();
+                            }
                         }
                     }
                     Tag::CodeBlock(kind) => match kind {
@@ -279,6 +350,7 @@ fn get_dids(did: &str, db: Database) -> HashMap<String, Doc> {
                                     let t: String = text.to_string();
                                     for line in t.lines() {
                                         if let Some((k, v)) = line.split_once(":") {
+                                            //debug!("docmeta {} => {}", k, v);
                                             match k {
                                                 "title" => doc.title = v.to_string(),
                                                 _ => (),
