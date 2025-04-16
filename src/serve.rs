@@ -1,6 +1,6 @@
 use crate::{config::Config, database::Database};
 use log::{debug, info, warn};
-use pulldown_cmark::{Event, Parser, Tag, TagEnd};
+use pulldown_cmark::{CowStr, Event, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use rouille::Response;
 use std::{collections::HashMap, fs::File, path::PathBuf};
@@ -75,11 +75,15 @@ fn render(cfg: &Config, did: &str) -> Option<String> {
     let dids = get_dids(did, db);
     debug!("DIDs needed: {:?}", dids.keys());
     let base = dids.get(did).unwrap();
-    let content = markdown_to_html(base, &dids);
-    Some(TEMPLATE.replace("CONTENT", &content).replace("TITLE", did))
+    let content = markdown_to_html(base.raw.as_str(), &dids);
+    Some(
+        TEMPLATE
+            .replace("CONTENT", &content)
+            .replace("TITLE", base.title.as_str()),
+    )
 }
 
-fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
+fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
     let mut html = String::new();
     let mut parser = Parser::new(markdown);
     let mut including = false;
@@ -98,7 +102,12 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
                     html.push_str(">");
                 }
                 Tag::BlockQuote => html.push_str("<blockquote>"),
-                Tag::CodeBlock(_) => html.push_str("<pre><code>"),
+                Tag::CodeBlock(kind) => match kind {
+                    pulldown_cmark::CodeBlockKind::Indented => html.push_str("<pre><code>"),
+                    pulldown_cmark::CodeBlockKind::Fenced(language) => {
+                        gen_codeblock(language.to_string().as_str(), &mut html, &mut parser);
+                    }
+                },
                 Tag::HtmlBlock => html.push_str("<div>"),
                 Tag::Item => html.push_str("<li>"),
                 Tag::FootnoteDefinition(_) => html.push_str("<div class=\"footnote\">"),
@@ -141,7 +150,7 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
                         debug!("include {}", inner_did);
 
                         if let Some(inner_md) = dids.get(&inner_did.to_string()) {
-                            let inner_html = markdown_to_html(inner_md, dids);
+                            let inner_html = markdown_to_html(inner_md.raw.as_str(), dids);
                             html.push_str("<div class=\"inclusion\">");
                             html.push_str(inner_html.as_str());
                             html.push_str("</div>\n");
@@ -223,13 +232,28 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, String>) -> String {
     html
 }
 
-fn get_dids(did: &str, db: Database) -> HashMap<String, String> {
-    let mut dids_md: HashMap<String, String> = HashMap::new();
+fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser) {
+    match language {
+        // TODO handle special "languages"
+        _ => html.push_str("<pre><code>"),
+    }
+}
+
+struct Doc {
+    raw: String,
+    title: String,
+}
+
+fn get_dids(did: &str, db: Database) -> HashMap<String, Doc> {
+    let mut dids_md: HashMap<String, Doc> = HashMap::new();
     let mut dids_todo: Vec<String> = vec![did.to_string()];
     while !dids_todo.is_empty() {
         let current = dids_todo.pop().unwrap();
         let raw = db.get_did(&current).unwrap();
-        dids_md.insert(current.to_string(), raw.clone());
+        let mut doc = Doc {
+            raw: raw.clone(),
+            title: String::from(did),
+        };
         let mut parser = Parser::new(raw.as_str());
         while let Some(event) = parser.next() {
             match event {
@@ -244,16 +268,33 @@ fn get_dids(did: &str, db: Database) -> HashMap<String, String> {
                         if dest_url.starts_with("did:") {
                             let inner_did = durl.strip_prefix("did:").unwrap();
                             debug!("ref include {}", inner_did);
-                            let inner_md = db.get_did(&inner_did.to_string()).unwrap();
-                            dids_md.insert(inner_did.to_string(), inner_md);
                             dids_todo.push(inner_did.to_string());
                         }
                     }
+                    Tag::CodeBlock(kind) => match kind {
+                        pulldown_cmark::CodeBlockKind::Indented => (),
+                        pulldown_cmark::CodeBlockKind::Fenced(language) => {
+                            if language == CowStr::from("docdustry-docmeta") {
+                                if let Some(Event::Text(text)) = parser.next() {
+                                    let t: String = text.to_string();
+                                    for line in t.lines() {
+                                        if let Some((k, v)) = line.split_once(":") {
+                                            match k {
+                                                "title" => doc.title = v.to_string(),
+                                                _ => (),
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     _ => (),
                 },
                 _ => (),
             }
         }
+        dids_md.insert(current.to_string(), doc);
     }
     dids_md
 }
