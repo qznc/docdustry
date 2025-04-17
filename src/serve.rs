@@ -3,7 +3,7 @@ use log::{debug, info, warn};
 use pulldown_cmark::{CowStr, Event, HeadingLevel, LinkType, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use rouille::Response;
-use std::{collections::HashMap, fs::File, path::PathBuf};
+use std::{fs::File, path::PathBuf};
 
 pub(crate) fn cmd_serve(cfg: Config) {
     let addr = "0.0.0.0:8081";
@@ -72,24 +72,23 @@ fn render(cfg: &Config, did: &str) -> Option<String> {
             return None;
         }
     };
-    let dids = get_dids(did, db);
-    debug!("DIDs needed: {:?}", dids.keys());
-    let base = dids.get(did).unwrap();
-    let content = markdown_to_html(base.raw.as_str(), &dids);
+    let md = db.get_did(did).unwrap();
+    let content = markdown_to_html(md.as_str(), &db);
+    let meta = parse_meta_from_markdown(did, md.as_str());
     Some(
         TEMPLATE
             .replace("CONTENT", &content)
-            .replace("TITLE", base.title.as_str()),
+            .replace("TITLE", &meta.title),
     )
 }
 
-fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
+fn markdown_to_html(markdown: &str, db: &Database) -> String {
     let mut html = String::new();
     let mut parser = Parser::new(markdown);
     // for img, remember if we are including a DID
     let mut including = false;
     // for links to DIDs, remember title in case the text is empty:
-    let mut doc_title = String::new();
+    let mut title_from_did = String::new();
     while let Some(event) = parser.next() {
         match event {
             Event::Start(tag) => match tag {
@@ -108,7 +107,7 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                 Tag::CodeBlock(kind) => match kind {
                     pulldown_cmark::CodeBlockKind::Indented => html.push_str("<pre><code>"),
                     pulldown_cmark::CodeBlockKind::Fenced(language) => {
-                        gen_codeblock(language.to_string().as_str(), &mut html, &mut parser);
+                        gen_codeblock(language.to_string().as_str(), &mut html, &mut parser, &db);
                     }
                 },
                 Tag::HtmlBlock => html.push_str("<div>"),
@@ -137,7 +136,7 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                     title,
                     id,
                 } => {
-                    doc_title = to_html_link(&mut html, link_type, &dest_url, &title, &id, &dids);
+                    title_from_did = to_html_link(&mut html, link_type, &dest_url, &title, &id);
                 }
                 Tag::Image {
                     link_type: _,
@@ -150,8 +149,8 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                         including = true;
                         let inner_did = durl.strip_prefix("did:").unwrap();
                         debug!("include {}", inner_did);
-                        if let Some(inner_md) = dids.get(&inner_did.to_string()) {
-                            let inner_html = markdown_to_html(inner_md.raw.as_str(), dids);
+                        if let Some(inner_md) = db.get_did(&inner_did.to_string()) {
+                            let inner_html = markdown_to_html(inner_md.as_str(), db);
                             html.push_str(
                                 "<div class=\"inclusion\"><a class=\"inclusion\" href=\"",
                             );
@@ -197,9 +196,11 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                 TagEnd::Strong => html.push_str("</strong>"),
                 TagEnd::Strikethrough => html.push_str("</del>"),
                 TagEnd::Link => {
-                    if !doc_title.is_empty() {
-                        html.push_str(&doc_title);
-                        doc_title.clear();
+                    if !title_from_did.is_empty() {
+                        let md = db.get_did(&title_from_did).unwrap();
+                        let meta = parse_meta_from_markdown(title_from_did.as_str(), md.as_str());
+                        html.push_str(&meta.title);
+                        title_from_did.clear();
                     }
                     html.push_str("</a>");
                 }
@@ -218,7 +219,7 @@ fn markdown_to_html(markdown: &str, dids: &HashMap<String, Doc>) -> String {
                 } else {
                     escape_html(&mut html, &t).unwrap()
                 }
-                doc_title.clear(); // no need at TagEnd::Link anymore
+                title_from_did.clear(); // no need at TagEnd::Link anymore
             }
             Event::Code(c) => {
                 html.push_str("<code>");
@@ -255,13 +256,12 @@ fn to_html_link(
     dest_url: &str,
     title: &str,
     id: &str,
-    dids: &HashMap<String, Doc>,
 ) -> String {
-    let mut doc_title = String::new();
+    let mut title_from_did = String::new();
     html.push_str("<a href=\"");
     if let Some(did) = dest_url.strip_prefix("did:") {
         html.push_str(&did);
-        doc_title = dids.get(did).unwrap().title.clone();
+        title_from_did.insert_str(0, did);
     } else {
         html.push_str(&dest_url);
     }
@@ -277,96 +277,113 @@ fn to_html_link(
         html.push('"');
     }
     html.push('>');
-    doc_title
+    title_from_did
 }
 
-fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser) {
+fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser, db: &Database) {
     match language {
         "docdustry-docmeta" => {
             html.push_str(&"<details class=\"metainfo\">");
             html.push_str(&"<summary>doc meta info</summary>");
             html.push_str(&"<pre class=\"docdustry-docmeta\"><code>");
-            while let Some(event) = parser.next() {
-                match event {
-                    Event::End(TagEnd::CodeBlock) => {
-                        html.push_str(&"</code></pre>");
-                        break;
+            let text = skip_codeblock(parser, html);
+            escape_html(&mut *html, &text).unwrap();
+            html.push_str(&"</code></pre></details>\n");
+        }
+        "docdustry-doclist" => {
+            let text = skip_codeblock(parser, html);
+            if let Some((k, v)) = text.trim().split_once(":") {
+                if k == "only-if-tagged" {
+                    let docs = db.by_tag(v);
+                    if docs.len() > 0 {
+                        html.push_str("<ul class=\"doclist\">");
+                        for md in docs {
+                            let meta = parse_meta_from_markdown("", md.as_str());
+                            html.push_str("<li><a href=\"");
+                            html.push_str(&meta.did);
+                            html.push_str("\">");
+                            html.push_str(&meta.title);
+                            html.push_str("</a></li>\n");
+                        }
+                        html.push_str("</ul>\n");
+                    } else {
+                        html.push_str("<p>Empty doclist</p>\n");
                     }
-                    Event::Text(t) => {
-                        escape_html(&mut *html, &t).unwrap();
-                    }
-                    _ => todo!(),
+                } else {
+                    html.push_str("<p>Unrestricted doclist</p>\n");
                 }
+            } else {
+                html.push_str("<p>Very unrestricted doclist</p>\n");
             }
-            html.push_str(&"</details>\n");
         }
         _ => html.push_str("<pre><code>"),
     }
 }
 
-struct Doc {
-    raw: String,
-    title: String,
+fn skip_codeblock(parser: &mut Parser, html: &mut String) -> String {
+    let mut text = String::new();
+    while let Some(event) = parser.next() {
+        match event {
+            Event::End(TagEnd::CodeBlock) => {
+                break;
+            }
+            Event::Text(t) => {
+                text.push_str(&t);
+            }
+            _ => todo!(),
+        }
+    }
+    text
 }
 
-fn get_dids(did: &str, db: Database) -> HashMap<String, Doc> {
-    let mut dids_md: HashMap<String, Doc> = HashMap::new();
-    let mut dids_todo: Vec<String> = vec![did.to_string()];
-    while !dids_todo.is_empty() {
-        let current = dids_todo.pop().unwrap();
-        let raw = db.get_did(&current).unwrap();
-        let mut doc = Doc {
-            raw: raw.clone(),
-            title: String::from(did),
-        };
-        let mut parser = Parser::new(raw.as_str());
-        while let Some(event) = parser.next() {
-            match event {
-                Event::Start(tag) => match tag {
-                    Tag::Image { dest_url, .. } => {
-                        if let Some(inner_did) = dest_url.strip_prefix("did:") {
-                            debug!("ref img include {}", inner_did);
-                            dids_todo.push(inner_did.to_string());
+struct Doc {
+    title: String,
+    did: String,
+    tags: Vec<String>,
+}
+
+fn parse_meta_from_markdown(did: &str, markdown: &str) -> Doc {
+    let mut doc = Doc {
+        title: String::from(did),
+        did: String::from(did),
+        tags: vec![],
+    };
+    let mut parser = Parser::new(markdown);
+    while let Some(event) = parser.next() {
+        match event {
+            Event::Start(tag) => match tag {
+                Tag::Heading { level, .. } => {
+                    if level == HeadingLevel::H1 {
+                        if let Some(Event::Text(t)) = parser.next() {
+                            doc.title = t.to_string();
                         }
                     }
-                    Tag::Link { dest_url, .. } => {
-                        if let Some(inner_did) = dest_url.strip_prefix("did:") {
-                            debug!("ref a include {}", inner_did);
-                            dids_todo.push(inner_did.to_string());
-                        }
-                    }
-                    Tag::Heading { level, .. } => {
-                        if level == HeadingLevel::H1 {
-                            if let Some(Event::Text(t)) = parser.next() {
-                                doc.title = t.to_string();
-                            }
-                        }
-                    }
-                    Tag::CodeBlock(kind) => match kind {
-                        pulldown_cmark::CodeBlockKind::Indented => (),
-                        pulldown_cmark::CodeBlockKind::Fenced(language) => {
-                            if language == CowStr::from("docdustry-docmeta") {
-                                if let Some(Event::Text(text)) = parser.next() {
-                                    let t: String = text.to_string();
-                                    for line in t.lines() {
-                                        if let Some((k, v)) = line.split_once(":") {
-                                            //debug!("docmeta {} => {}", k, v);
-                                            match k {
-                                                "title" => doc.title = v.to_string(),
-                                                _ => (),
-                                            }
+                }
+                Tag::CodeBlock(kind) => match kind {
+                    pulldown_cmark::CodeBlockKind::Indented => (),
+                    pulldown_cmark::CodeBlockKind::Fenced(language) => {
+                        if language == CowStr::from("docdustry-docmeta") {
+                            if let Some(Event::Text(text)) = parser.next() {
+                                let t: String = text.to_string();
+                                for line in t.lines() {
+                                    if let Some((k, v)) = line.split_once(":") {
+                                        //debug!("docmeta {} => {}", k, v);
+                                        match k {
+                                            "id" => doc.did = v.trim().to_string(),
+                                            "title" => doc.title = v.trim().to_string(),
+                                            "tag" => doc.tags.push(v.trim().to_string()),
+                                            _ => (),
                                         }
                                     }
                                 }
                             }
                         }
-                    },
-                    _ => (),
+                    }
                 },
                 _ => (),
-            }
+            },
+            _ => (),
         }
-        dids_md.insert(current.to_string(), doc);
     }
-    dids_md
+    doc
 }

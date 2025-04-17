@@ -21,7 +21,8 @@ pub fn init_db(db_path: &PathBuf) -> Result<Connection> {
         "CREATE TABLE IF NOT EXISTS documents (
             id INTEGER PRIMARY KEY,
             did TEXT NOT NULL UNIQUE,
-            raw TEXT NOT NULL
+            raw TEXT NOT NULL,
+            tags TEXT
         )",
     )?;
 
@@ -59,5 +60,20 @@ impl Database {
         } else {
             None
         }
+    }
+
+    pub fn by_tag(&self, tag: &str) -> Vec<String> {
+        debug!("Get documents by tag {}", tag);
+        let mut md = vec![];
+        let tag_wrap = format!("%§{}§%", tag.trim());
+        let query = "SELECT raw FROM documents WHERE tags LIKE ?1";
+        let mut statement = self.con.prepare(query).unwrap();
+        statement.bind((1, tag_wrap.as_str())).unwrap();
+        while let Ok(State::Row) = statement.next() {
+            let raw = statement.read("raw").unwrap();
+            md.push(raw);
+        }
+        debug!("Got {} documents", md.len());
+        md
     }
 }
