@@ -11,4 +11,5 @@ Sometimes we want to reference a whole list of documents.
 id: req2_doclist
 status: accepted
 tag: requirement
+derived_from: req2
 ```

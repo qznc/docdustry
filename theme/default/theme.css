@@ -49,3 +49,4 @@ main { background: #fff; }
 main pre { background: #eee; }
 
 div.inclusion { border: 1px solid #ccc; }
+details.metainfo summary { color: #999; }

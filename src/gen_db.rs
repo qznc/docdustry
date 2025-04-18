@@ -24,6 +24,15 @@ pub(crate) fn cmd_gen_db(cfg: &Config) {
             stmt.bind((2, entry.raw_md.as_str())).unwrap();
             stmt.bind((3, tags.as_str())).unwrap();
             stmt.next().unwrap();
+
+            for rel in &entry.relations {
+                let query = "INSERT OR REPLACE INTO relations (src,verb,tgt) VALUES (?,?,?);";
+                let mut stmt = db.prepare(query).unwrap();
+                stmt.bind((1, rel.from.as_str())).unwrap();
+                stmt.bind((2, rel.verb.as_str())).unwrap();
+                stmt.bind((3, rel.to.as_str())).unwrap();
+                stmt.next().unwrap();
+            }
         } else {
             debug!("skip DID {} because empty", did);
         }
@@ -60,6 +69,7 @@ fn read_md_files(docs: &mut HashMap<String, Entry>, src_path_base: &std::path::P
                         let entry = Entry {
                             raw_md: markdown,
                             tags: meta.tags,
+                            relations: meta.relations,
                         };
                         docs.insert(meta.did, entry);
                     }
@@ -81,17 +91,26 @@ fn read_md_files(docs: &mut HashMap<String, Entry>, src_path_base: &std::path::P
 struct Entry {
     raw_md: String,
     tags: Vec<String>,
+    relations: Vec<Relation>,
 }
 
 struct Meta {
     did: String,
     tags: Vec<String>,
+    relations: Vec<Relation>,
+}
+
+struct Relation {
+    from: String,
+    to: String,
+    verb: String,
 }
 
 fn parse_meta(raw: &String) -> Meta {
     let mut ret = Meta {
         did: String::new(),
         tags: vec![],
+        relations: vec![],
     };
     for line in raw.split("\n") {
         if let Some((k, v)) = line.split_once(":") {
@@ -100,7 +119,16 @@ fn parse_meta(raw: &String) -> Meta {
                     ret.did = v.trim().to_string();
                 }
                 "tag" => ret.tags.push(v.trim().to_string()),
-                _ => (),
+                key => {
+                    let relations = ["needs", "derived_from"];
+                    if relations.contains(&key) {
+                        ret.relations.push(Relation {
+                            from: ret.did.clone(),
+                            to: v.trim().to_string(),
+                            verb: String::from(key),
+                        });
+                    };
+                }
             }
         }
         if ret.did.is_empty() {

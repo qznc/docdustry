@@ -11,4 +11,5 @@ Simplest way is an img link to a document id:
 id: req2_link
 status: accepted
 tag: requirement
+derived_from: req2
 ```
