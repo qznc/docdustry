@@ -19,6 +19,8 @@ input, button, textarea, select { font: inherit; }
 
 /** LAYOUT **/
 
+footer>*,
+header>*,
 main { max-width: 40em; padding: 1em; margin: 3px auto; }
 
 main pre { padding: 0.2em 0.5em; margin-bottom: 1em; }
@@ -30,6 +32,11 @@ div.inclusion { margin: 1em 0; padding: 0.5em 0.2em; }
 .inclusion a.inclusion { float: right; }
 
 details.metainfo { margin: 1em 0 0 0; }
+
+#backlinks ul { padding: 0; }
+#backlinks li:first-child::before { content: "Backlinks: "; }
+#backlinks li { display: inline; }
+#backlinks li+li::before { content: ", "; }
 
 /** FONTS, TYPOGRAPHY **/
 

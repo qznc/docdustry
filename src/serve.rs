@@ -60,7 +60,9 @@ const TEMPLATE: &str = "<!DOCTYPE html>
 <body>
 <header></header>
 <main>CONTENT</main>
-<footer></footer>
+<footer>
+<div id=\"backlinks\">BACKLINKS</div>
+</footer>
 </body>
 </html>";
 
@@ -75,11 +77,31 @@ fn render(cfg: &Config, did: &str) -> Option<String> {
     let md = db.get_did(did).unwrap();
     let content = markdown_to_html(md.as_str(), &db);
     let meta = parse_meta_from_markdown(did, md.as_str());
+    let backlinks = render_backlinks(did, &db);
     Some(
         TEMPLATE
             .replace("CONTENT", &content)
+            .replace("BACKLINKS", &backlinks)
             .replace("TITLE", &meta.title),
     )
+}
+
+fn render_backlinks(did: &str, db: &Database) -> String {
+    let mut ret = String::new();
+    let links = db.backlinks(did);
+    if links.is_empty() {
+        return ret;
+    }
+    ret.push_str("<ul>");
+    for link in links {
+        ret.push_str("<li><a href=\"");
+        ret.push_str(&link);
+        ret.push_str("\">");
+        ret.push_str(&link);
+        ret.push_str("</a></li>");
+    }
+    ret.push_str("</ul>");
+    return ret;
 }
 
 fn markdown_to_html(markdown: &str, db: &Database) -> String {
@@ -286,12 +308,12 @@ fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser, db: &Da
             html.push_str(&"<details class=\"metainfo\">");
             html.push_str(&"<summary>doc meta info</summary>");
             html.push_str(&"<pre class=\"docdustry-docmeta\"><code>");
-            let text = skip_codeblock(parser, html);
+            let text = skip_codeblock(parser);
             escape_html(&mut *html, &text).unwrap();
             html.push_str(&"</code></pre></details>\n");
         }
         "docdustry-doclist" => {
-            let text = skip_codeblock(parser, html);
+            let text = skip_codeblock(parser);
             if let Some((k, v)) = text.trim().split_once(":") {
                 if k == "only-if-tagged" {
                     let docs = db.by_tag(v);
@@ -320,7 +342,7 @@ fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser, db: &Da
     }
 }
 
-fn skip_codeblock(parser: &mut Parser, html: &mut String) -> String {
+fn skip_codeblock(parser: &mut Parser) -> String {
     let mut text = String::new();
     while let Some(event) = parser.next() {
         match event {

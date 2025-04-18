@@ -1,6 +1,7 @@
 use crate::{config::Config, database::init_db};
 use ignore::Walk;
 use log::{debug, error, info};
+use pulldown_cmark::{Event, HeadingLevel, Parser};
 use std::{collections::HashMap, fs::read_to_string};
 
 pub(crate) fn cmd_gen_db(cfg: &Config) {
@@ -65,7 +66,7 @@ fn read_md_files(docs: &mut HashMap<String, Entry>, src_path_base: &std::path::P
                 let file = src_path_base.join(&src_path_rel);
                 match read_to_string(&file) {
                     Ok(markdown) => {
-                        let meta = parse_meta(&markdown);
+                        let meta = parse_markdown_to_meta(&markdown);
                         let entry = Entry {
                             raw_md: markdown,
                             tags: meta.tags,
@@ -106,12 +107,76 @@ struct Relation {
     verb: String,
 }
 
-fn parse_meta(raw: &String) -> Meta {
+enum NextTextAction {
+    Nothing,
+    Title,
+    MetaBlock,
+}
+
+fn parse_markdown_to_meta(raw: &String) -> Meta {
     let mut ret = Meta {
         did: String::new(),
         tags: vec![],
         relations: vec![],
     };
+    let mut link_targets = vec![];
+    let mut parser = Parser::new(raw);
+    let mut next_text_action = NextTextAction::Nothing;
+    while let Some(event) = parser.next() {
+        match event {
+            Event::Start(tag) => match tag {
+                pulldown_cmark::Tag::Heading { level, .. } => {
+                    if level == HeadingLevel::H1 {
+                        next_text_action = NextTextAction::Title;
+                    }
+                }
+                pulldown_cmark::Tag::CodeBlock(kind) => match kind {
+                    pulldown_cmark::CodeBlockKind::Indented => (),
+                    pulldown_cmark::CodeBlockKind::Fenced(typ) => {
+                        if typ.as_ref() == "docdustry-docmeta" {
+                            next_text_action = NextTextAction::MetaBlock;
+                        }
+                    }
+                },
+                //pulldown_cmark::Tag::MetadataBlock(_) => todo!(),
+                pulldown_cmark::Tag::Link { dest_url, .. } => {
+                    if let Some(did) = dest_url.strip_prefix("did:") {
+                        link_targets.push(did.to_string());
+                    }
+                }
+                pulldown_cmark::Tag::Image { dest_url, .. } => {
+                    if let Some(did) = dest_url.strip_prefix("did:") {
+                        link_targets.push(did.to_string());
+                    }
+                }
+                _ => (),
+            },
+            Event::Text(t) => match next_text_action {
+                NextTextAction::Nothing => (),
+                NextTextAction::Title => {
+                    if ret.did.is_empty() {
+                        // Markdown title can be substitute DID
+                        ret.did = t.replace(" ", "_").to_ascii_lowercase();
+                    }
+                }
+                NextTextAction::MetaBlock => {
+                    parse_meta_block(&t.to_string(), &mut ret);
+                }
+            },
+            _ => (),
+        }
+    }
+    for did in link_targets {
+        ret.relations.push(Relation {
+            from: ret.did.clone(),
+            to: did,
+            verb: String::from("links"),
+        })
+    }
+    ret
+}
+
+fn parse_meta_block(raw: &String, ret: &mut Meta) {
     for line in raw.split("\n") {
         if let Some((k, v)) = line.split_once(":") {
             match k {
@@ -131,12 +196,5 @@ fn parse_meta(raw: &String) -> Meta {
                 }
             }
         }
-        if ret.did.is_empty() {
-            if let Some(title) = line.strip_prefix("# ") {
-                // Markdown title can be substitute DID
-                ret.did = title.replace(" ", "_").to_ascii_lowercase();
-            }
-        }
     }
-    ret
 }

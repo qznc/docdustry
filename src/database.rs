@@ -84,4 +84,16 @@ impl Database {
         debug!("Got {} documents", md.len());
         md
     }
+
+    pub fn backlinks(&self, did: &str) -> Vec<String> {
+        let mut sources = vec![];
+        let query = "SELECT src FROM relations WHERE tgt == ?1";
+        let mut statement = self.con.prepare(query).unwrap();
+        statement.bind((1, did)).unwrap();
+        while let Ok(State::Row) = statement.next() {
+            let src = statement.read("src").unwrap();
+            sources.push(src);
+        }
+        sources
+    }
 }
