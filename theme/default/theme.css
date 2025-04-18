@@ -19,6 +19,11 @@ input, button, textarea, select { font: inherit; }
 
 /** LAYOUT **/
 
+#center { width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; }
+#search { flex: 0 1 auto: order: 1; }
+main { flex: 0 1 auto; order: 3; }
+#relations { flex: 0 1 auto; order: 5;}
+
 footer>*,
 header>*,
 main { max-width: 40em; padding: 1em; margin: 3px auto; }
@@ -40,14 +45,21 @@ details.metainfo { margin: 1em 0 0 0; }
 
 /** FONTS, TYPOGRAPHY **/
 
-body { font-family: sans-serif; font-size: 18px; }
-pre, code { font-family: monospace; }
+body { font-family: Helvetica, "Helvetica Neue", Roboto, "Liberation Sans", "DejaVu Sans Condensed", "Nimbus Sans", "Nimbus Sans L", sans-serif; }
+code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
+
+body { font-size: 18px; }
 
 main h1,
 main h2 { font-weight: normal; }
 
 details.metainfo summary,
 .inclusion a.inclusion { font-size: 0.8em;}
+
+main a[href^="//"]::before,
+main a[href^="https://"]::before,
+main a[href^="http://"]::before { content: '🌐'; opacity: 0.5; font-size: 0.7em; }
+main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-size: 0.8em; }
 
 /** COLORS **/
 

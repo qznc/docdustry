@@ -86,14 +86,49 @@ impl Database {
     }
 
     pub fn backlinks(&self, did: &str) -> Vec<String> {
+        let rels = self.relations_with_tgt(did);
         let mut sources = vec![];
-        let query = "SELECT src FROM relations WHERE tgt == ?1";
+        for rel in rels {
+            if rel.verb != "links" {
+                continue;
+            }
+            sources.push(rel.src);
+        }
+        sources
+    }
+
+    pub fn relations_with_src(&self, did: &str) -> Vec<RelationTarget> {
+        let mut rels = vec![];
+        let query = "SELECT verb,tgt FROM relations WHERE src == ?1";
+        let mut statement = self.con.prepare(query).unwrap();
+        statement.bind((1, did)).unwrap();
+        while let Ok(State::Row) = statement.next() {
+            let tgt = statement.read("tgt").unwrap();
+            let verb = statement.read("verb").unwrap();
+            rels.push(RelationTarget { tgt, verb });
+        }
+        rels
+    }
+
+    pub fn relations_with_tgt(&self, did: &str) -> Vec<RelationSource> {
+        let mut rels = vec![];
+        let query = "SELECT src,verb FROM relations WHERE tgt == ?1";
         let mut statement = self.con.prepare(query).unwrap();
         statement.bind((1, did)).unwrap();
         while let Ok(State::Row) = statement.next() {
             let src = statement.read("src").unwrap();
-            sources.push(src);
+            let verb = statement.read("verb").unwrap();
+            rels.push(RelationSource { verb, src });
         }
-        sources
+        rels
     }
+}
+
+pub struct RelationTarget {
+    pub verb: String,
+    pub tgt: String,
+}
+pub struct RelationSource {
+    pub src: String,
+    pub verb: String,
 }

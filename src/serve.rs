@@ -59,7 +59,11 @@ const TEMPLATE: &str = "<!DOCTYPE html>
 </head>
 <body>
 <header></header>
-<main>CONTENT</main>
+<div id=\"center\">
+    <div id=\"search\">SEARCH</div>
+    <main>CONTENT</main>
+    <div id=\"relations\">RELATIONS</div>
+</div>
 <footer>
 <div id=\"backlinks\">BACKLINKS</div>
 </footer>
@@ -78,12 +82,52 @@ fn render(cfg: &Config, did: &str) -> Option<String> {
     let content = markdown_to_html(md.as_str(), &db);
     let meta = parse_meta_from_markdown(did, md.as_str());
     let backlinks = render_backlinks(did, &db);
+    let relations = render_relations(did, &db);
     Some(
         TEMPLATE
             .replace("CONTENT", &content)
             .replace("BACKLINKS", &backlinks)
+            .replace("RELATIONS", &relations)
             .replace("TITLE", &meta.title),
     )
+}
+
+fn render_relations(did: &str, db: &Database) -> String {
+    let mut ret = String::new();
+    // Incoming
+    let incoming = db.relations_with_tgt(did);
+    if incoming.is_empty() {
+        return ret;
+    }
+    ret.push_str("<ul class=\"incoming\">");
+    for rel in incoming {
+        ret.push_str("<li><a href=\"");
+        ret.push_str(&rel.src);
+        ret.push_str("\">");
+        ret.push_str(&rel.src);
+        ret.push_str("</a> ");
+        ret.push_str(&rel.verb);
+        ret.push_str(" this</li>");
+    }
+    ret.push_str("</ul>");
+    // Outgoing
+    let outgoing = db.relations_with_src(did);
+    if outgoing.is_empty() {
+        return ret;
+    }
+    ret.push_str("<ul class=\"outgoing\">");
+    for rel in outgoing {
+        ret.push_str("<li>this ");
+        ret.push_str(&rel.verb);
+        ret.push_str(" <a href=\"");
+        ret.push_str(&rel.tgt);
+        ret.push_str("\">");
+        ret.push_str(&rel.tgt);
+        ret.push_str("</a>");
+        ret.push_str("</li>");
+    }
+    ret.push_str("</ul>");
+    ret
 }
 
 fn render_backlinks(did: &str, db: &Database) -> String {
