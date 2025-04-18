@@ -135,7 +135,7 @@ fn parse_markdown_to_meta(raw: &String) -> Meta {
         match event {
             Event::Start(tag) => match tag {
                 pulldown_cmark::Tag::Heading { level, .. } => {
-                    if level == HeadingLevel::H1 {
+                    if level == HeadingLevel::H1 && ret.title.is_empty() {
                         next_text_action = NextTextAction::Title;
                     }
                 }
