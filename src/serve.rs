@@ -10,7 +10,6 @@ pub(crate) fn cmd_serve(cfg: Config) {
     println!("Start webserver at http://{}", addr);
     rouille::start_server(addr, move |request| {
         info!("Request: {:?}", request);
-
         if request.method() != "GET" {
             return Response::empty_404();
         }
@@ -18,18 +17,63 @@ pub(crate) fn cmd_serve(cfg: Config) {
         if let Some(sub_url) = url.strip_prefix("/_static/") {
             return static_file(&cfg.serve.theme, sub_url);
         }
+        let db = match Database::open(&cfg) {
+            Ok(x) => x,
+            Err(e) => {
+                debug!("Error: {}", e);
+                return Response::empty_204();
+            }
+        };
+        if request.url() == "/s" {
+            let query = request.raw_query_string();
+            return search_results(query, &db);
+        }
         let did: &str = if request.url() == "/" {
-            "default"
+            "foo"
         } else {
             url.strip_prefix("/").unwrap()
         };
-        if let Some(html) = render(&cfg, did) {
+        if let Some(html) = render(did, &db) {
             Response::html(html)
         } else {
             debug!("Did not find page {}", did);
             Response::empty_404()
         }
     });
+}
+
+fn search_results(query: &str, db: &Database) -> Response {
+    if let Some(search_term) = parse_query(query) {
+        let title = format!("Search Results: {}", search_term);
+        let mut content = String::from("<h1>");
+        content.push_str(&title);
+        content.push_str("</h1>\n");
+        let results = db.search(search_term);
+        content.push_str("<ul class=\"search_results\">\n");
+        for res in results {
+            content.push_str("<li><a href=\"");
+            content.push_str(&res.did);
+            content.push_str("\">");
+            content.push_str(&res.title);
+            content.push_str("</a></li>\n");
+        }
+        content.push_str("</ul>\n");
+        let html = render_template(&content, "", "", &title);
+        Response::html(html)
+    } else {
+        Response::text("No search term")
+    }
+}
+
+fn parse_query(query: &str) -> Option<&str> {
+    for kv in query.split("&") {
+        if let Some((k, v)) = kv.split_once("=") {
+            if k == "s" {
+                return Some(v);
+            }
+        }
+    }
+    None
 }
 
 fn static_file(theme_dir: &PathBuf, url: &str) -> Response {
@@ -48,48 +92,49 @@ fn static_file(theme_dir: &PathBuf, url: &str) -> Response {
     Response::from_file(typ, file)
 }
 
-const TEMPLATE: &str = "<!DOCTYPE html>
-<html>
-<head>
-<title>TITLE</title>
-<meta charset=\"utf-8\" />
-<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
-<script src=\"_static/theme.js\"></script>
-<link rel=\"stylesheet\" type=\"text/css\" href=\"_static/theme.css\" />
-</head>
-<body>
-<header></header>
-<div id=\"center\">
-    <div id=\"search\">SEARCH</div>
-    <main>CONTENT</main>
-    <div id=\"relations\">RELATIONS</div>
-</div>
-<footer>
-<div id=\"backlinks\">BACKLINKS</div>
-</footer>
-</body>
-</html>";
-
-fn render(cfg: &Config, did: &str) -> Option<String> {
-    let db = match Database::open(&cfg) {
-        Ok(x) => x,
-        Err(e) => {
-            debug!("Error: {}", e);
-            return None;
-        }
-    };
-    let md = db.get_did(did).unwrap();
+fn render(did: &str, db: &Database) -> Option<String> {
+    let md = db.get_did(did)?;
     let content = markdown_to_html(md.as_str(), &db);
     let meta = parse_meta_from_markdown(did, md.as_str());
     let backlinks = render_backlinks(did, &db);
     let relations = render_relations(did, &db);
-    Some(
-        TEMPLATE
-            .replace("CONTENT", &content)
-            .replace("BACKLINKS", &backlinks)
-            .replace("RELATIONS", &relations)
-            .replace("TITLE", &meta.title),
-    )
+    Some(render_template(
+        &content,
+        &backlinks,
+        &relations,
+        &meta.title,
+    ))
+}
+
+fn render_template(content: &str, backlinks: &str, relations: &str, title: &str) -> String {
+    let mut html = String::from("<!DOCTYPE html>\n");
+    html.push_str("<html>\n<head><title>");
+    html.push_str(&title);
+    html.push_str("</title>\n");
+    html.push_str(
+        "<meta charset=\"utf-8\" />
+<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
+<script src=\"_static/theme.js\"></script>
+<link rel=\"stylesheet\" type=\"text/css\" href=\"_static/theme.css\" />
+</head>",
+    );
+    html.push_str(
+        "<body>
+<header></header>
+<div id=\"center\">
+    <div id=\"search\"><form method=\"GET\" action=\"s\">
+        <input name=\"s\" placeholder=\"search term\" required />
+        <button>Search</button>
+    </form></div>
+    <main>",
+    );
+    html.push_str(&content);
+    html.push_str("</main>\n<div id=\"relations\">");
+    html.push_str(&relations);
+    html.push_str("</div></div>\n<footer><div id=\"backlinks\">");
+    html.push_str(&backlinks);
+    html.push_str("</div></footer>\n</body></html>");
+    html
 }
 
 fn render_relations(did: &str, db: &Database) -> String {

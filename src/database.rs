@@ -22,6 +22,7 @@ pub fn init_db(db_path: &PathBuf) -> Result<Connection> {
             id INTEGER PRIMARY KEY,
             did TEXT NOT NULL UNIQUE,
             raw TEXT NOT NULL,
+            title TEXT NOT NULL,
             tags TEXT
         )",
     )?;
@@ -122,6 +123,32 @@ impl Database {
         }
         rels
     }
+
+    pub fn search(&self, search_term: &str) -> Vec<SearchResult> {
+        let mut ret = vec![];
+        let sql_search_term = format!("%{}%", search_term);
+        let query = "SELECT did,title FROM documents WHERE raw LIKE ?1";
+        let mut statement = self.con.prepare(query).unwrap();
+        statement.bind((1, sql_search_term.as_str())).unwrap();
+        while let Ok(State::Row) = statement.next() {
+            let did: String = statement.read("did").unwrap();
+            let title: String = statement.read("title").unwrap();
+            if did.is_empty() {
+                continue;
+            }
+            ret.push(SearchResult {
+                did: did.clone(),
+                title: title.clone(),
+            });
+        }
+        debug!("Search found {} results", ret.len());
+        ret
+    }
+}
+
+pub struct SearchResult {
+    pub did: String,
+    pub title: String,
 }
 
 pub struct RelationTarget {
