@@ -114,22 +114,22 @@ fn render_template(content: &str, backlinks: &str, relations: &str, title: &str)
     html.push_str(
         "<meta charset=\"utf-8\" />
 <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
+<meta name=\"color-scheme\" content=\"light dark\">
 <script src=\"_static/theme.js\"></script>
 <link rel=\"stylesheet\" type=\"text/css\" href=\"_static/theme.css\" />
 </head>",
     );
+    html.push_str("<body><header></header><div id=\"center\">");
+    html.push_str("<main>");
+    html.push_str(&content);
+    html.push_str("</main>\n");
     html.push_str(
-        "<body>
-<header></header>
-<div id=\"center\">
-    <div id=\"search\"><form method=\"GET\" action=\"s\">
+        "<div id=\"search\"><form method=\"GET\" action=\"s\">
         <input name=\"s\" placeholder=\"search term\" required />
         <button>Search</button>
-    </form></div>
-    <main>",
+    </form></div>",
     );
-    html.push_str(&content);
-    html.push_str("</main>\n<div id=\"relations\">");
+    html.push_str("<div id=\"relations\">");
     html.push_str(&relations);
     html.push_str("</div></div>\n<footer><div id=\"backlinks\">");
     html.push_str(&backlinks);

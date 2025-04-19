@@ -19,16 +19,32 @@ input, button, textarea, select { font: inherit; }
 
 /** LAYOUT **/
 
-#center { width: 100%; display: flex; flex-direction: row; justify-content: center; align-items: flex-start; }
-#search { flex: 0 1 auto: order: 1; }
-main { flex: 0 1 auto; order: 3; }
-#relations { flex: 0 1 auto; order: 5;}
+@media screen and (min-width: 60em) {
+  #center { width: 100%; display: flex; flex-direction: row; justify-content: center; align-items: flex-start; }
 
-#search, #relations { width: 20em; }
+  #search { flex: 0 1 auto: order: 1; }
+  main { flex: 0 1 auto; order: 3; }
+  #relations { flex: 0 1 auto; order: 5;}
 
-footer>*,
-header>*,
-main { width: 40em; padding: 1em; margin: 3px 0; }
+  #search, #relations { width: 20em; }
+
+  footer>*,
+  header>*,
+  main { width: 40em; padding: 1em; margin: 3px 0; }
+}
+
+@media (max-width: 60em) {
+  #center { max-width: 40em; margin: 3px auto; }
+  main { padding: 1em; }
+}
+
+@media print {
+  #search,
+  #relations,
+  details.metainfo summary,
+  footer { display: none; }
+}
+
 footer>*,
 header>* { margin: 3px auto; }
 
@@ -83,9 +99,20 @@ main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-size: 0.8e
 
 /** COLORS **/
 
-body { background: #ddd; }
-main { background: #fff; }
-main pre { background: #eee; }
+@media screen {
+  body { background: #ddd; color: #000; }
+  main { background: #fff; }
+  main pre { background: #eee; }
+}
 
 div.inclusion { border: 1px solid #ccc; }
 details.metainfo summary { color: #999; }
+
+@media screen and (prefers-color-scheme: dark) {
+  body { background: #222; color: #eee; }
+  main { background: #000; }
+  main pre { background: #111; }
+
+  div.inclusion { border: 1px solid #ccc; }
+  details.metainfo summary { color: #999; }
+}
