@@ -65,7 +65,7 @@ fn search_results(query: &str, db: &Database) -> Response {
     }
 }
 
-fn parse_query(query: &str) -> Option<&str> {
+pub fn parse_query(query: &str) -> Option<&str> {
     for kv in query.split("&") {
         if let Some((k, v)) = kv.split_once("=") {
             if k == "s" {

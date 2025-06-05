@@ -4,7 +4,7 @@ use log::{debug, error, info};
 use pulldown_cmark::{Event, HeadingLevel, Parser};
 use std::{collections::HashMap, fs::read_to_string};
 
-pub(crate) fn cmd_gen_db(cfg: &Config) {
+pub fn cmd_gen_db(cfg: &Config) {
     let db = init_db(&cfg.db_path).unwrap();
     let mut docs: HashMap<String, Entry> = HashMap::new();
     for src in cfg.get_sources() {
@@ -102,17 +102,17 @@ struct Entry {
     title: String,
 }
 
-struct Meta {
-    did: String,
-    tags: Vec<String>,
-    relations: Vec<Relation>,
-    title: String,
+pub struct Meta {
+    pub did: String,
+    pub tags: Vec<String>,
+    pub relations: Vec<Relation>,
+    pub title: String,
 }
 
-struct Relation {
-    from: String,
-    to: String,
-    verb: String,
+pub struct Relation {
+    pub from: String,
+    pub to: String,
+    pub verb: String,
 }
 
 enum NextTextAction {
@@ -121,7 +121,7 @@ enum NextTextAction {
     MetaBlock,
 }
 
-fn parse_markdown_to_meta(raw: &String) -> Meta {
+pub fn parse_markdown_to_meta(raw: &String) -> Meta {
     let mut ret = Meta {
         did: String::new(),
         tags: vec![],

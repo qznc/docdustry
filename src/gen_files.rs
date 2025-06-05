@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use crate::config::Config;
 use crate::gen_html::{read_md_files, Doc};
 
-pub(crate) fn cmd_gen(cfg: &Config) {
+pub fn cmd_gen(cfg: &Config) {
     let output = cfg.output.clone();
     if !output.exists() {
         create_dir_all(&output).unwrap();
