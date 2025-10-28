@@ -1,4 +1,4 @@
-# Syntax
+# Document Syntax
 
 Mostly, you use Markdown.
 More precisely, [CommonMark](https://commonmark.org/).
