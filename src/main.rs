@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
 use ini::Ini;
 use log::{debug, info, warn};
-use serve::cmd_serve;
 use std::path::{Path, PathBuf};
 
 mod config;
@@ -45,7 +44,7 @@ fn main() {
         Command::Gen {} => gen_files::cmd_gen(&cfg),
         Command::GenDB {} => gen_db::cmd_gen_db(&cfg),
         Command::SpamMd {} => spam_md::generate_random_markdown_files(Path::new(&"spam"), 100, 100),
-        Command::Serve {} => cmd_serve(cfg),
+        Command::Serve {} => serve::cmd_serve(cfg),
     }
 }
 

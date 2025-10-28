@@ -5,7 +5,7 @@ use pulldown_cmark_escape::escape_html;
 use rouille::Response;
 use std::{fs::File, path::PathBuf};
 
-pub(crate) fn cmd_serve(cfg: Config) {
+pub fn cmd_serve(cfg: Config) {
     let addr = "0.0.0.0:8081";
     println!("Start webserver at http://{}", addr);
     rouille::start_server(addr, move |request| {

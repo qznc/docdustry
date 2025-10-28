@@ -3,7 +3,6 @@ use std::path::PathBuf;
 pub struct ServeConfig {
     pub theme: PathBuf,
     pub frontpage: Option<String>,
-    pub title: Option<String>,
 }
 
 pub struct Config {
@@ -26,7 +25,6 @@ impl Config {
             serve: ServeConfig {
                 theme: PathBuf::from("theme/default"),
                 frontpage: None,
-                title: None,
             },
         }
     }
