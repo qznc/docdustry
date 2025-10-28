@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use ini::Ini;
-use log::{info, warn};
+use log::{debug, info, warn};
 use serve::cmd_serve;
 use std::path::{Path, PathBuf};
 
@@ -54,6 +54,7 @@ fn load_config_file(args: &Cli) -> config::Config {
 
     if let Some(ini_path) = args.ini.clone() {
         if ini_path.exists() {
+            debug!("Load config from {:?}", &ini_path);
             let i = Ini::load_from_file(ini_path).unwrap();
             for (sec, prop) in i.iter() {
                 match sec {
@@ -64,11 +65,18 @@ fn load_config_file(args: &Cli) -> config::Config {
                             } else if k == "output" {
                                 cfg.output = PathBuf::from(v);
                             } else if k == "frontpage" {
-                                cfg.frontpage = Some(v.to_string());
+                                cfg.gen_frontpage = Some(v.to_string());
                             } else if k == "theme" {
                                 cfg.theme = Some(PathBuf::from(v.to_string()));
                             } else {
                                 warn!("Unknown config [gen] {}:{}", k, v);
+                            }
+                        }
+                    }
+                    Some("serve") => {
+                        for (k, v) in prop.iter() {
+                            if k == "frontpage" {
+                                cfg.serve.frontpage = Some(v.to_string());
                             }
                         }
                     }

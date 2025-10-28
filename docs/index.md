@@ -12,10 +12,9 @@ Read on here:
 
 
 ```docdustry-docmeta
-id: foo
+id: index
 status: draft
 blub: 42
 tag: mayhem
 tag: flubber
 ```
-

@@ -29,7 +29,7 @@ pub(crate) fn cmd_serve(cfg: Config) {
             return search_results(query, &db);
         }
         let did: &str = if request.url() == "/" {
-            "foo"
+            cfg.serve.frontpage.as_deref().unwrap_or("index")
         } else {
             url.strip_prefix("/").unwrap()
         };

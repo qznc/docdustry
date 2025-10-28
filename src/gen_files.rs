@@ -102,7 +102,7 @@ fn write_index_file(
     cfg: &Config,
 ) -> Result<(), std::io::Error> {
     let output_file_path = output_dir.join(&"index.html");
-    if let Some(did) = cfg.frontpage.clone() {
+    if let Some(did) = cfg.gen_frontpage.clone() {
         match docs.iter().find(|d| d.did == did) {
             Some(d) => {
                 info!("output {}", &output_file_path.display());

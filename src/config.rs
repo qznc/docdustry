@@ -2,13 +2,15 @@ use std::path::PathBuf;
 
 pub struct ServeConfig {
     pub theme: PathBuf,
+    pub frontpage: Option<String>,
+    pub title: Option<String>,
 }
 
 pub struct Config {
     sources: Vec<PathBuf>,
     pub output: PathBuf,
     pub db_path: PathBuf,
-    pub frontpage: Option<String>,
+    pub gen_frontpage: Option<String>,
     pub theme: Option<PathBuf>,
     pub serve: ServeConfig,
 }
@@ -19,10 +21,12 @@ impl Config {
             sources: vec![],
             output: PathBuf::from(&"out/"),
             db_path: PathBuf::from(&"db.sqlite3"),
-            frontpage: None,
+            gen_frontpage: None,
             theme: None,
             serve: ServeConfig {
                 theme: PathBuf::from("theme/default"),
+                frontpage: None,
+                title: None,
             },
         }
     }
