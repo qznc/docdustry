@@ -39,7 +39,8 @@ pub fn init_db(db_path: &PathBuf) -> Result<Connection> {
         "CREATE TABLE IF NOT EXISTS relations (
             src TEXT NOT NULL,
             verb TEXT NOT NULL,
-            tgt TEXT NOT NULL
+            tgt TEXT NOT NULL,
+            UNIQUE(src, verb, tgt)
         )",
     )?;
 
