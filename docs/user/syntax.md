@@ -1,8 +1,8 @@
-# User Manual
+# Syntax
 
-To execute it
-
-    docdustry gen
+Mostly, you use Markdown.
+More precisely, [CommonMark](https://commonmark.org/).
+Alternatively, see [](did:commonmark-spec).
 
 ## Changes from Markdown
 
@@ -29,8 +29,7 @@ If you use a document ID, the document is included.
 
     ![some text](did:user_manual)
 
-
 ```docdustry-docmeta
-id: user_manual
+id: syntax
+tag: user
 ```
-
