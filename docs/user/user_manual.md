@@ -4,3 +4,4 @@ Docdustry is a documentation generation tool that converts Markdown files into H
 
 * [](did:subcommands)
 * [](did:syntax)
+* [](did:ini)
