@@ -8,6 +8,8 @@ The top-level requirements are the following.
 
 ![include](did:req3)
 
+![include](did:req4)
+
 ```docdustry-docmeta
 id: requirements
 ```

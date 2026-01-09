@@ -29,6 +29,41 @@ If you use a document ID, the document is included.
 
     ![some text](did:user_manual)
 
+### Mermaid Diagrams
+
+To embed [Mermaid.js](https://mermaid.js.org) diagrams, use a ``docdustry-mermaid`` codeblock.
+Use docdustry-mermaid like this:
+
+```docdustry-mermaid
+---
+title: Example Git diagram
+---
+gitGraph
+   commit
+   commit
+   branch develop
+   checkout develop
+   commit
+   commit
+   checkout main
+   merge develop
+   commit
+   commit
+```
+
+It comes from code like this:
+
+```
+    ```docdustry-mermaid
+    ---
+    title: Example Git diagram
+    ---
+    gitGraph
+    commit
+    commit
+    ```
+```
+
 ```docdustry-docmeta
 id: syntax
 tag: user

@@ -133,7 +133,16 @@ fn render_template(content: &str, backlinks: &str, relations: &str, title: &str)
     html.push_str(&relations);
     html.push_str("</div></div>\n<footer><div id=\"backlinks\">");
     html.push_str(&backlinks);
-    html.push_str("</div></footer>\n</body></html>");
+    html.push_str("</div></footer>\n");
+    html.push_str(
+        r##"<script type="module">
+        if (document.querySelector('.mermaid')) {
+          var mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+          mermaid.default.initialize({ startOnLoad: true });
+        }
+    </script>"##,
+    );
+    html.push_str("</body></html>");
     html
 }
 
@@ -400,6 +409,12 @@ fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser, db: &Da
             let text = skip_codeblock(parser);
             escape_html(&mut *html, &text).unwrap();
             html.push_str(&"</code></pre></details>\n");
+        }
+        "docdustry-mermaid" => {
+            let text = skip_codeblock(parser);
+            html.push_str(&"<pre class=\"mermaid\">");
+            html.push_str(&text);
+            html.push_str(&"</pre>\n");
         }
         "docdustry-doclist" => {
             let text = skip_codeblock(parser);
