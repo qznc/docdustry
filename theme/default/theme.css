@@ -22,7 +22,7 @@ input, button, textarea, select { font: inherit; }
 @media screen and (min-width: 60em) {
   #center { width: 100%; display: flex; flex-direction: row; justify-content: center; align-items: flex-start; }
 
-  #search { flex: 0 1 auto: order: 1; }
+  #search { flex: 0 1 auto; order: 1; }
   main { flex: 0 1 auto; order: 3; }
   #relations { flex: 0 1 auto; order: 5;}
 
@@ -30,7 +30,10 @@ input, button, textarea, select { font: inherit; }
 
   footer>*,
   header>*,
-  main { width: 40em; padding: 1em; margin: 3px 0; }
+  main { width: 40em; margin: 3px 0; }
+  footer>*,
+  main { padding: 1em;}
+  header>* { padding: 0 1em; }
 }
 
 @media (max-width: 60em) {
@@ -55,6 +58,7 @@ main pre { padding: 0.2em 0.5em; margin-bottom: 1em; }
 
 h1, h2, h3, h4, h5,
 form,
+table,
 main p { margin-top: 1em; }
 
 div.inclusion { margin: 1em 0; padding: 0.5em 0.2em; }
@@ -77,18 +81,18 @@ details.metainfo { margin: 1em 0 0 0; }
 body { font-family: Helvetica, "Helvetica Neue", Roboto, "Liberation Sans", "DejaVu Sans Condensed", "Nimbus Sans", "Nimbus Sans L", sans-serif; }
 code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
 
-body { font-size: 18px; }
+body { font-size: 22px; line-height: 1.5; }
 
 main h1,
 main h2 { font-weight: normal; }
 
-main h1 { font-size: 36px; line-height: 1.2; }
+main h1 { font-size: 40px; line-height: 1.2; }
 main .inclusion h1,
-main h2 { font-size: 30px; line-height: 1.2; }
+main h2 { font-size: 34px; line-height: 1.2; }
 main .inclusion h2,
-main h3 { font-size: 26px; line-height: 1.2; }
+main h3 { font-size: 30px; line-height: 1.2; }
 main .inclusion h3,
-main h4 { font-size: 20px; line-height: 1.2; }
+main h4 { font-size: 26px; line-height: 1.2; }
 main .inclusion h4,
 main h5,
 main h6 { font-size: inherit; line-height: 1.2; }
@@ -138,3 +142,4 @@ body.dark-mode {
 
 div.inclusion { border: 1px solid var(--scheme3); }
 details.metainfo summary { color: var(--scheme4); }
+table { border: 1px solid var(--scheme3); border-width: 1px 0; }

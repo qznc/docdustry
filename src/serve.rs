@@ -115,7 +115,7 @@ fn render_template(content: &str, backlinks: &str, relations: &str, title: &str)
         "<meta charset=\"utf-8\" />
 <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
 <meta name=\"color-scheme\" content=\"light dark\">
-<script src=\"_static/theme.js\"></script>
+<script src=\"_static/theme.js\" defer></script>
 <link rel=\"stylesheet\" type=\"text/css\" href=\"_static/theme.css\" />
 </head>",
     );
