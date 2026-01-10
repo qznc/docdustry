@@ -9,22 +9,11 @@ This is a normal Rust application.
     cargo build
     target/debug/docdustry
 
-## Requirements
+## Internals
 
-As a developer,
-you should know the requirements.
-
-```docdustry-doclist
-only-if-tagged: requirement
-```
-
-Including them is also possible, for long documents.
-
-![include](did:requirements)
-
-That's it.
+1. [](did:requirements)
+2. [](did:arch_intro)
 
 ```docdustry-docmeta
 id: dev_manual
-tag: todo
 ```
