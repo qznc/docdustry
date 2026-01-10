@@ -1,5 +1,5 @@
 use crate::{config::Config, database::Database};
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use pulldown_cmark::{CowStr, Event, HeadingLevel, LinkType, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use rouille::Response;
@@ -317,7 +317,13 @@ fn markdown_to_html(markdown: &str, db: &Database) -> String {
                 TagEnd::Strikethrough => html.push_str("</del>"),
                 TagEnd::Link => {
                     if !title_from_did.is_empty() {
-                        let md = db.get_did(&title_from_did).unwrap();
+                        let md = match db.get_did(&title_from_did) {
+                            Some(x) => x,
+                            None => {
+                                error!("Document {} not found", title_from_did);
+                                String::new()
+                            }
+                        };
                         let meta = parse_meta_from_markdown(title_from_did.as_str(), md.as_str());
                         html.push_str(&meta.title);
                         title_from_did.clear();
