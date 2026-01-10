@@ -1,6 +1,6 @@
 use crate::{config::Config, database::Database};
 use log::{debug, error, info, warn};
-use pulldown_cmark::{CowStr, Event, HeadingLevel, LinkType, Parser, Tag, TagEnd};
+use pulldown_cmark::{CowStr, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use rouille::Response;
 use std::{fs::File, path::PathBuf};
@@ -204,7 +204,10 @@ fn render_backlinks(did: &str, db: &Database) -> String {
 
 fn markdown_to_html(markdown: &str, db: &Database) -> String {
     let mut html = String::new();
-    let mut parser = Parser::new(markdown);
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    options.insert(Options::ENABLE_STRIKETHROUGH);
+    let mut parser = Parser::new_ext(markdown, options);
     // for img, remember if we are including a DID
     let mut including = false;
     // for links to DIDs, remember title in case the text is empty:
@@ -480,7 +483,9 @@ fn parse_meta_from_markdown(did: &str, markdown: &str) -> Doc {
         did: String::from(did),
         tags: vec![],
     };
-    let mut parser = Parser::new(markdown);
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    let mut parser = Parser::new_ext(markdown, options);
     while let Some(event) = parser.next() {
         match event {
             Event::Start(tag) => match tag {

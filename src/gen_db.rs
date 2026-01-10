@@ -1,7 +1,7 @@
 use crate::{config::Config, database::init_db};
 use ignore::Walk;
 use log::{debug, error, info};
-use pulldown_cmark::{Event, HeadingLevel, Parser};
+use pulldown_cmark::{Event, HeadingLevel, Options, Parser};
 use std::{collections::HashMap, fs::read_to_string};
 
 pub fn cmd_gen_db(cfg: &Config) {
@@ -129,7 +129,9 @@ pub fn parse_markdown_to_meta(raw: &String) -> Meta {
         title: String::new(),
     };
     let mut link_targets = vec![];
-    let mut parser = Parser::new(raw);
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    let mut parser = Parser::new_ext(raw, options);
     let mut next_text_action = NextTextAction::Nothing;
     while let Some(event) = parser.next() {
         match event {

@@ -1,7 +1,7 @@
 use ignore::Walk;
 use log::{error, info, warn};
 use pulldown_cmark::Parser;
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use std::collections::{HashMap, VecDeque};
 use std::fs::read_to_string;
@@ -71,7 +71,9 @@ impl Doc {
         include_map: &Option<HashMap<String, String>>,
         metas: &Vec<DocMeta>,
     ) {
-        let mut parser = Parser::new(raw);
+        let mut options = Options::empty();
+        options.insert(Options::ENABLE_TABLES);
+        let mut parser = Parser::new_ext(raw, options);
         while let Some(event) = parser.next() {
             match event {
                 Event::Start(tag) => match tag {
