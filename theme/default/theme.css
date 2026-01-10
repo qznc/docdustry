@@ -39,6 +39,7 @@ input, button, textarea, select { font: inherit; }
 }
 
 @media print {
+  header,
   #search,
   #relations,
   details.metainfo summary,
@@ -47,6 +48,8 @@ input, button, textarea, select { font: inherit; }
 
 footer>*,
 header>* { margin: 3px auto; }
+
+header docdustry-switches { float: right; text-align: right; }
 
 main pre { padding: 0.2em 0.5em; margin-bottom: 1em; }
 
@@ -102,39 +105,36 @@ a:hover { text-decoration: none; }
 
 /** COLORS **/
 
-:root {
+body:not(.dark-mode) {
   --scheme1: #9cc;
   --scheme2: #245;
   --scheme3: #123;
   --scheme4: #444;
   --scheme5: #665;
+  --background-page: #9cc;
+  --background-main: #fff;
+  --text-color: #000;
+}
+
+body.dark-mode {
+    --scheme1: #024;
+    --scheme2: #eef;
+    --scheme3: #ddf;
+    --scheme4: #aaa;
+    --scheme5: #665;
+  --background-page: #000;
+  --background-main: #222;
+  --text-color: #fff;
 }
 
 @media screen {
-  body { background: var(--scheme1); color: #000; }
-  main { background: #fff; }
+  body { background: var(--background-page); color: var(--text-color); }
+  main { background: var(--background-main); }
   main pre { border-left: 0.5em solid var(--scheme5); }
   main h1 { color: var(--scheme2); }
   a { color: var(--scheme5); }
   a:visited { color: var(--scheme4); }
 }
 
-div.inclusion { border: 1px solid #ccc; }
-details.metainfo summary { color: #999; }
-
-@media screen and (prefers-color-scheme: dark) {
-  :root {
-    --scheme1: #024;
-    --scheme2: #eef;
-    --scheme3: #ddf;
-    --scheme4: #aaa;
-    --scheme5: #665;
-  }
-
-  body { color: #eee; }
-  main { background: #001; }
-  main pre { background: #111; }
-
-  div.inclusion { border: 1px solid #ccc; }
-  details.metainfo summary { color: #999; }
-}
+div.inclusion { border: 1px solid var(--scheme3); }
+details.metainfo summary { color: var(--scheme4); }

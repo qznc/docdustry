@@ -119,7 +119,7 @@ fn render_template(content: &str, backlinks: &str, relations: &str, title: &str)
 <link rel=\"stylesheet\" type=\"text/css\" href=\"_static/theme.css\" />
 </head>",
     );
-    html.push_str("<body><header></header><div id=\"center\">");
+    html.push_str("<body><header><docdustry-switches /></header><div id=\"center\">");
     html.push_str("<main>");
     html.push_str(&content);
     html.push_str("</main>\n");
