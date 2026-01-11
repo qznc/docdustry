@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head><title>Subcommands</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light dark">
+<script src="_static/theme.js" defer></script>
+<link rel="stylesheet" type="text/css" href="_static/theme.css" />
+</head><body><header><docdustry-switches /></header><div id="center"><main><h1>Subcommands</h1>
+<p>Docdustry is a documentation generation tool that converts Markdown files into HTML documentation and manages them via a SQLite database.</p>
+<h2>Command Line Usage</h2>
+<p>Docdustry provides several subcommands for different operations:</p>
+<pre><code>docdustry [OPTIONS] &lt;SUBCOMMAND&gt;
+</code></pre>
+<h3>Options</h3>
+<ul><li><code>-i, --ini &lt;FILE&gt;</code>: Specify a configuration file in INI format.
+See <a href="ini.html">The ini file</a> for details.</li></ul>
+<h3>Subcommands</h3>
+<p><div class="inclusion"><a class="inclusion" href="sub-gendb.html">inclusion</a><h1><code>gen-db</code> subcommand</h1>
+<p>This command processes Markdown files and stores them in a database for efficient querying and serving via <a href="sub-serve.html">sub-serve</a>.</p>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: sub-gendb
+tag: user
+</code></pre></details>
+</div>
+
+<div class="inclusion"><a class="inclusion" href="sub-serve.html">inclusion</a><h1><code>serve</code> subcommand</h1>
+<p>Starts a web server that serves documentation from the database.</p>
+<p>Configure this via <a href="ini-serve-section.html">ini-serve-section</a>.</p>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: sub-serve
+tag: user
+</code></pre></details>
+</div>
+
+<div class="inclusion"><a class="inclusion" href="sub-spam.html">inclusion</a><h1><code>spam-md</code> subcommand</h1>
+<p>This creates 100 random Markdown files in a <code>spam</code> directory, useful for testing and development.</p>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: sub-spam
+tag: user
+</code></pre></details>
+</div>
+
+<div class="inclusion"><a class="inclusion" href="sub-gen.html">inclusion</a><h1><code>gen</code> subcommand</h1>
+<p>Generates HTML documentation from Markdown source files.</p>
+<p>Configure this via <a href="ini-gen-section.html">ini-gen-section</a>.</p>
+<p>This command:</p>
+<ul><li>Reads Markdown files from configured source directories</li><li>Converts them to HTML with custom linking and inclusion features</li><li>Outputs the generated documentation to the configured output directory</li></ul>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: sub-gen
+tag: user
+</code></pre></details>
+</div>
+</p>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: subcommands
+tag: user
+</code></pre></details>
+</main>
+<div id="search"><form method="GET" action="http://localhost:8081/s">
+        <input name="s" placeholder="search term" required />
+        <button>Search</button>
+    </form></div><div id="relations"><ul class="incoming"><li><a href="user_manual.html">user_manual</a> links this</li></ul><ul class="outgoing"><li>this links <a href="ini.html">ini</a></li><li>this links <a href="sub-gen.html">sub-gen</a></li><li>this links <a href="sub-gendb.html">sub-gendb</a></li><li>this links <a href="sub-serve.html">sub-serve</a></li><li>this links <a href="sub-spam.html">sub-spam</a></li></ul></div></div>
+<footer><div id="backlinks"><ul><li><a href="user_manual.html">user_manual</a></li></ul></div></footer>
+<script type="module">
+        if (document.querySelector('.mermaid')) {
+          var mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+          mermaid.default.initialize({ startOnLoad: true });
+        }
+    </script></body></html>

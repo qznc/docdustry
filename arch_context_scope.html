@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head><title>Context and Scope</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light dark">
+<script src="_static/theme.js" defer></script>
+<link rel="stylesheet" type="text/css" href="_static/theme.css" />
+</head><body><header><docdustry-switches /></header><div id="center"><main><h1>Context and Scope</h1>
+<h2>Usage Context</h2>
+<p>Docdustry is a documentation generation system that processes structured documentation with support for templates, includes, and cross-references.</p>
+<pre class="mermaid">graph LR
+    devs[👤 Developers]
+    users[👤 Users]
+    auto[Automation]
+    subgraph Docdustry[Docdustry System]
+        read([Read])
+        write([Write])
+        merge([Merge docs])
+    end
+    
+    devs ---- read
+    devs --- write
+    read ---- users
+    write -.- read
+    auto --- merge
+</pre>
+<p>Managing documentation at scale means we have to process docs in bulk.
+For example, merge the documentation of multiple components into an application documentation.</p>
+<h2>Technical Context</h2>
+<p>Docdustry takes inputs from the file system (Markdown files, images, etc).
+It compiles everything into an SQLite database which can be moved around.
+It serves the documentation from SQLite as a webserver.
+As a command line tool it may work with multiple SQLite files.</p>
+<pre class="mermaid">graph LR
+    inputs@{ shape: docs, label: "📄 Files" }
+    browser[Web Browser]
+    ci@{ shape: cloud, label: "CI/CD Automation" }
+    
+    subgraph "Docdustry System"
+        cli[⌨️ CLI Tool]
+        db[(SQLite Database)]
+    end
+    
+    inputs --> cli
+    cli <--> db
+    cli ---> browser
+    cli <---> ci
+
+</pre>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: arch_context_scope
+tag: arc42
+</code></pre></details>
+<p>See <a href="https://docs.arc42.org/section-3/">Arc42 Context &amp; Scope hints</a>.
+Continue to <a href="arch_solution_strategy.html">Solution Strategy</a>.</p>
+</main>
+<div id="search"><form method="GET" action="http://localhost:8081/s">
+        <input name="s" placeholder="search term" required />
+        <button>Search</button>
+    </form></div><div id="relations"><ul class="incoming"><li><a href="arch_constraints.html">arch_constraints</a> links this</li><li><a href="arch_intro.html">arch_intro</a> links this</li></ul><ul class="outgoing"><li>this links <a href="arch_solution_strategy.html">arch_solution_strategy</a></li></ul></div></div>
+<footer><div id="backlinks"><ul><li><a href="arch_constraints.html">arch_constraints</a></li><li><a href="arch_intro.html">arch_intro</a></li></ul></div></footer>
+<script type="module">
+        if (document.querySelector('.mermaid')) {
+          var mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+          mermaid.default.initialize({ startOnLoad: true });
+        }
+    </script></body></html>

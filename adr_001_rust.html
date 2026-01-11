@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head><title>ADR-001: Use Rust for Core Implementation</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light dark">
+<script src="_static/theme.js" defer></script>
+<link rel="stylesheet" type="text/css" href="_static/theme.css" />
+</head><body><header><docdustry-switches /></header><div id="center"><main><h1>ADR-001: Use Rust for Core Implementation</h1>
+<table><thead><td></td><td></td></thead><tr><td><strong>Status</strong></td><td>Decided in 2025</td></tr><tr><td><strong>Decision</strong></td><td>Rust as primary implementation language</td></tr><tr><td><strong>Implementation</strong></td><td>Started coding</td></tr></table>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: adr_001_rust
+tag: decision
+status: accepted
+</code></pre></details>
+<h2>Challenge</h2>
+<p>We need to choose a programming language for implementing Docdustry.</p>
+<p>The essential goals for this decision:</p>
+<ul><li><strong>Performance</strong>: Documentation sets can be large (thousands of documents), requiring efficient processing, graph traversal for link resolution, and potentially parallel processing.
+See <a href="req1.html">DocDustry shall be fast</a>.</li><li><strong>CLI</strong>: The tool runs as a command-line application, requiring efficient file I/O, process management, and system interaction.
+See <a href="arch_solution_strategy.html">Solution Strategy</a>.</li><li><strong>Reliability</strong>: The tool must be reliable and robust, handling edge cases and unexpected inputs gracefully. See what?</li></ul>
+<h2>Potential Solutions</h2>
+<h3>Python</h3>
+<p>Python is a high-level, dynamically typed language with excellent text processing capabilities and a rich ecosystem.</p>
+<ul><li>🚫 <strong>Performance</strong>: High speed is hard in Python and often requires C/Rust extensions.
+Processing thousands of documents would be slow without native extensions.</li><li>🚫 <strong>CLI</strong>: Dependencies with Python can be a headache.
+Distributing a Python application requires users to have Python installed and manage virtual environments or use tools like PyInstaller.</li><li>🚫 <strong>Reliability</strong>: Dynamic typing makes it easy to introduce runtime errors that aren&#39;t caught until execution.
+Large codebases become harder to refactor safely.</li></ul>
+<h3>Go</h3>
+<p>Go is a statically typed, compiled language designed for simplicity and built-in concurrency support.</p>
+<ul><li>💚 <strong>Performance</strong>: Go provides good performance with fast compilation and efficient concurrency via goroutines.</li><li>However, garbage collection can introduce latency spikes during large document processing.</li><li>💚 <strong>CLI</strong>: Statically-linked executables are the default in Go.
+Single binary distribution is straightforward.</li><li>🚫 <strong>Reliability</strong>: Static typing and simplicity help, but Go&#39;s error handling can lead to unchecked errors.
+Nil pointer dereferences are still possible at runtime.</li></ul>
+<h3>C++</h3>
+<p>C++ offers maximum performance and control with decades of maturity and extensive libraries.</p>
+<ul><li>💚 <strong>Performance</strong>: Excellent performance with fine-grained control over memory and optimization.
+No garbage collection overhead.</li><li>🚫 <strong>CLI</strong>: While common, deploying to Linux distros can be quite complex.
+Dependencies on system libraries and C++ runtime versions can create compatibility issues.</li><li>🚫 <strong>Reliability</strong>: Manual memory management leads to entire classes of bugs (use-after-free, double-free, memory leaks, buffer overflows).
+Requires significant discipline and tooling to avoid safety issues.</li></ul>
+<h3>Rust</h3>
+<p>Rust is a systems programming language focused on safety, performance, and concurrency without garbage collection.</p>
+<ul><li>💚 <strong>Performance</strong>: C/C++-level performance with zero-cost abstractions and no garbage collection.
+Efficient memory usage and excellent support for parallel processing.</li><li>💚 <strong>CLI</strong>: Statically-linked executables are the default in Rust.
+Single binary distribution with minimal dependencies.</li><li>💚 <strong>Reliability</strong>: Memory safety guaranteed at compile time through the ownership system.
+Strong type system prevents entire classes of bugs (null pointer dereferences, data races, use-after-free) before code runs.</li></ul>
+<h2>Evaluation</h2>
+<p>In order of importance – most important first.</p>
+<table><thead><td>Criterion</td><td>Python</td><td>Go</td><td>C++</td><td>Rust</td></thead><tr><td><strong>Performance</strong></td><td>🚫</td><td>💚</td><td>💚</td><td>💚</td></tr><tr><td><strong>CLI</strong></td><td>🚫</td><td>💚</td><td>🚫</td><td>💚</td></tr><tr><td><strong>Reliability</strong></td><td>🚫</td><td>🚫</td><td>🚫</td><td>💚</td></tr></table>
+<p>Python does not qualify for performance reasons.
+C++ fails our &quot;CLI&quot; needs.
+Go is not as reliable.</p>
+<p>Thus, we choose <strong>Rust</strong> as the primary implementation language for Docdustry.</p>
+</main>
+<div id="search"><form method="GET" action="http://localhost:8081/s">
+        <input name="s" placeholder="search term" required />
+        <button>Search</button>
+    </form></div><div id="relations"><ul class="incoming"><li><a href="arch_decisions.html">arch_decisions</a> links this</li></ul><ul class="outgoing"><li>this links <a href="arch_solution_strategy.html">arch_solution_strategy</a></li><li>this links <a href="req1.html">req1</a></li></ul></div></div>
+<footer><div id="backlinks"><ul><li><a href="arch_decisions.html">arch_decisions</a></li></ul></div></footer>
+<script type="module">
+        if (document.querySelector('.mermaid')) {
+          var mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+          mermaid.default.initialize({ startOnLoad: true });
+        }
+    </script></body></html>

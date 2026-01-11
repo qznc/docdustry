@@ -1,0 +1,145 @@
+/** RESET **/
+
+/* Use a more-intuitive box-sizing model */
+*, *::before, *::after { box-sizing: border-box; }
+
+* { margin: 0; font-family: inherit; }
+
+/* Add accessible line-height */
+body { line-height: 1.5; }
+
+/* full height always */
+body { min-height: 100vh; }
+
+/* Anything that has been anchored to should have extra scroll margin */
+:target { scroll-margin-block: 5ex; }
+
+/* Inherit fonts for form controls */
+input, button, textarea, select { font: inherit; }
+
+/** LAYOUT **/
+
+@media screen and (min-width: 60em) {
+  #center { width: 100%; display: flex; flex-direction: row; justify-content: center; align-items: flex-start; }
+
+  #search { flex: 0 1 auto; order: 1; }
+  main { flex: 0 1 auto; order: 3; }
+  #relations { flex: 0 1 auto; order: 5;}
+
+  #search, #relations { width: 20em; }
+
+  footer>*,
+  header>*,
+  main { width: 40em; margin: 3px 0; }
+  footer>*,
+  main { padding: 1em;}
+  header>* { padding: 0 1em; }
+}
+
+@media (max-width: 60em) {
+  #center { max-width: 40em; margin: 3px auto; }
+  main { padding: 1em; }
+}
+
+@media print {
+  header,
+  #search,
+  #relations,
+  details.metainfo summary,
+  footer { display: none; }
+}
+
+footer>*,
+header>* { margin: 3px auto; }
+
+header docdustry-switches { float: right; text-align: right; }
+
+main pre { padding: 0.2em 0.5em; margin-bottom: 1em; }
+
+h1, h2, h3, h4, h5,
+form,
+table,
+main p { margin-top: 1em; }
+
+div.inclusion { margin: 1em 0; padding: 0.5em 0.2em; }
+
+.inclusion a.inclusion { float: right; }
+
+details.metainfo { margin: 1em 0 0 0; }
+
+#relations ul { margin-top: 1em; }
+#relations ul.incoming::before { content: "Incoming:"; }
+#relations ul.outgoing::before { content: "Outgoing:"; }
+
+#backlinks ul { padding: 0; }
+#backlinks li:first-child::before { content: "Backlinks: "; }
+#backlinks li { display: inline; }
+#backlinks li+li::before { content: ", "; }
+
+/** FONTS, TYPOGRAPHY **/
+
+body { font-family: Helvetica, "Helvetica Neue", Roboto, "Liberation Sans", "DejaVu Sans Condensed", "Nimbus Sans", "Nimbus Sans L", sans-serif; }
+code { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
+
+body { font-size: 22px; line-height: 1.5; }
+
+main h1,
+main h2 { font-weight: normal; }
+
+main h1 { font-size: 40px; line-height: 1.2; }
+main .inclusion h1,
+main h2 { font-size: 34px; line-height: 1.2; }
+main .inclusion h2,
+main h3 { font-size: 30px; line-height: 1.2; }
+main .inclusion h3,
+main h4 { font-size: 26px; line-height: 1.2; }
+main .inclusion h4,
+main h5,
+main h6 { font-size: inherit; line-height: 1.2; }
+
+details.metainfo summary,
+.inclusion a.inclusion { font-size: 0.7em;}
+
+main a[href^="//"]::before,
+main a[href^="https://"]::before,
+main a[href^="http://"]::before { content: '🌐'; opacity: 0.5; font-size: 0.7em; }
+main a[href^="mailto:"]::before { content: '📧'; opacity: 0.5; font-size: 0.8em; }
+
+a:hover { text-decoration: none; }
+
+/** COLORS **/
+
+body:not(.dark-mode) {
+  --scheme1: #9cc;
+  --scheme2: #245;
+  --scheme3: #123;
+  --scheme4: #444;
+  --scheme5: #665;
+  --background-page: #9cc;
+  --background-main: #fff;
+  --text-color: #000;
+}
+
+body.dark-mode {
+    --scheme1: #024;
+    --scheme2: #eef;
+    --scheme3: #ddf;
+    --scheme4: #aaa;
+    --scheme5: #665;
+  --background-page: #000;
+  --background-main: #222;
+  --text-color: #fff;
+}
+
+@media screen {
+  body { background: var(--background-page); color: var(--text-color); }
+  main { background: var(--background-main); }
+  main pre { border-left: 0.5em solid var(--scheme5); }
+  main h1 { color: var(--scheme2); }
+  a { color: var(--scheme5); }
+  a:visited { color: var(--scheme4); }
+}
+
+div.inclusion { border: 1px solid var(--scheme3); }
+details.metainfo summary { color: var(--scheme4); }
+table { border: 1px solid var(--scheme3); border-width: 1px 0; }

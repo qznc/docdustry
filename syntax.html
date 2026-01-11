@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head><title>Document Syntax</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light dark">
+<script src="_static/theme.js" defer></script>
+<link rel="stylesheet" type="text/css" href="_static/theme.css" />
+</head><body><header><docdustry-switches /></header><div id="center"><main><h1>Document Syntax</h1>
+<p>Mostly, you use Markdown.
+More precisely, <a href="https://commonmark.org/">CommonMark</a>.
+Alternatively, see <a href="commonmark-spec.html">Appendix: A parsing strategy</a>.</p>
+<h2>Changes from Markdown</h2>
+<h3>Linking</h3>
+<p>You can link to a document id.
+For example, the id of this document is <code>user_manual</code>,
+so it could link to itself with:</p>
+<pre><code>Link [to myself](did:user_manual) like this.
+</code></pre>
+<p>If the link text is omitted,
+the title of the linked document is insert.</p>
+<pre><code>Link to the [](did:user_manual) like this.
+</code></pre>
+<h3>Inclusion</h3>
+<p>With Markdown you can include images like this:</p>
+<pre><code>![some text](image.jpg)
+</code></pre>
+<p>If you use a document ID, the document is included.</p>
+<pre><code>![some text](did:user_manual)
+</code></pre>
+<h3>Mermaid Diagrams</h3>
+<p>To embed <a href="https://mermaid.js.org">Mermaid.js</a> diagrams, use a <code>docdustry-mermaid</code> codeblock.
+Use docdustry-mermaid like this:</p>
+<pre class="mermaid">---
+title: Example Git diagram
+---
+gitGraph
+   commit
+   commit
+   branch develop
+   checkout develop
+   commit
+   commit
+   checkout main
+   merge develop
+   commit
+   commit
+</pre>
+<p>It comes from code like this:</p>
+<pre><code>    ```docdustry-mermaid
+    ---
+    title: Example Git diagram
+    ---
+    gitGraph
+    commit
+    commit
+    ```
+</code></pre>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: syntax
+tag: user
+</code></pre></details>
+</main>
+<div id="search"><form method="GET" action="http://localhost:8081/s">
+        <input name="s" placeholder="search term" required />
+        <button>Search</button>
+    </form></div><div id="relations"><ul class="incoming"><li><a href="user_manual.html">user_manual</a> links this</li></ul><ul class="outgoing"><li>this links <a href="commonmark-spec.html">commonmark-spec</a></li></ul></div></div>
+<footer><div id="backlinks"><ul><li><a href="user_manual.html">user_manual</a></li></ul></div></footer>
+<script type="module">
+        if (document.querySelector('.mermaid')) {
+          var mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+          mermaid.default.initialize({ startOnLoad: true });
+        }
+    </script></body></html>

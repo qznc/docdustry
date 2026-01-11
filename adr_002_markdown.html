@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head><title>ADR-002: Markdown as Primary Format</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light dark">
+<script src="_static/theme.js" defer></script>
+<link rel="stylesheet" type="text/css" href="_static/theme.css" />
+</head><body><header><docdustry-switches /></header><div id="center"><main><h1>ADR-002: Markdown as Primary Format</h1>
+<table><thead><td></td><td></td></thead><tr><td><strong>Status</strong></td><td>Decided in 2025</td></tr><tr><td><strong>Decision</strong></td><td>Markdown as primary format for documentation</td></tr><tr><td><strong>Implementation</strong></td><td>Added requirement <a href="req3.html">DocDustry shall use Markdown</a></td></tr></table>
+<details class="metainfo"><summary>doc meta info</summary><pre class="docdustry-docmeta"><code>id: adr_002_markdown
+tag: decision
+status: accepted
+</code></pre></details>
+<h2>Challenge</h2>
+<p>We need to choose a documentation format that is both human-readable and machine-parseable.</p>
+<p>The essential goals for this decision:</p>
+<ul><li><strong>Easy</strong>: Documentation should be easy to read and write without special tools.
+Authors should not be appalled by the syntax.</li><li><strong>Extensible</strong>: We need the ability to add custom extensions for document metadata, diagrams, cross-references, and other Docdustry-specific features.</li></ul>
+<h2>Potential Solutions</h2>
+<h3>reStructuredText</h3>
+<p>reStructuredText (rST) is a plaintext markup syntax used extensively in the Python community, particularly with Sphinx.</p>
+<ul><li>🚫 <strong>Easy</strong>: The syntax is more complex and less intuitive than Markdown.
+The learning curve is steeper for authors unfamiliar with rST.
+Less widespread adoption means fewer developers know it.</li><li>💚 <strong>Extensible</strong>: Extensible through directives and roles.
+Well-established extension mechanisms used by Sphinx and other tools.</li></ul>
+<h3>AsciiDoc</h3>
+<p>AsciiDoc is a feature-rich plaintext markup language with semantic document structure support.</p>
+<ul><li>🚫 <strong>Easy</strong>: Syntax can be complex for advanced features.
+Fewer developers are familiar with AsciiDoc compared to Markdown.</li><li>💚 <strong>Extensible</strong>: Extensible through custom blocks and macros.
+The tooling ecosystem is smaller but supports extensions.</li></ul>
+<h3>Markdown (CommonMark)</h3>
+<p>Markdown is a lightweight markup language with widespread adoption and extensive tool support.
+CommonMark is formalized dialect.</p>
+<ul><li>💚 <strong>Easy</strong>: Simple, intuitive syntax that reads naturally in plain text.
+Most developers already know Markdown.
+Authors are comfortable with the familiar syntax.</li><li>🚫 <strong>Extensible</strong>: CommonMark specification is intentionally minimal and stable.
+No standard extension mechanism in the specification itself.
+Extensions typically require custom parsers or preprocessing, breaking compatibility with standard Markdown tools.</li></ul>
+<p>However, extensibility is not <em>impossible</em>.
+Code blocks allow to specify the language within the block and it is common to process the contents accordingly.
+For out uses that should be sufficient.
+We can process code blocks with types like <code>docdustry-docmeta</code> in custom ways.</p>
+<h2>Evaluation</h2>
+<p>In order of importance – most important first.</p>
+<table><thead><td>Criterion</td><td>rST</td><td>AsciiDoc</td><td>Markdown</td></thead><tr><td><strong>Easy</strong></td><td>🚫</td><td>🚫</td><td>💚</td></tr><tr><td><strong>Extensible</strong></td><td>💚</td><td>💚</td><td>🚫</td></tr></table>
+<p>rST and AsciiDoc both fail the &quot;Easy&quot; criterion.
+Markdown fails the &quot;Extensible&quot; criterion but that is not as important,
+thus we pick it.</p>
+</main>
+<div id="search"><form method="GET" action="http://localhost:8081/s">
+        <input name="s" placeholder="search term" required />
+        <button>Search</button>
+    </form></div><div id="relations"><ul class="incoming"><li><a href="arch_decisions.html">arch_decisions</a> links this</li></ul><ul class="outgoing"><li>this links <a href="req3.html">req3</a></li></ul></div></div>
+<footer><div id="backlinks"><ul><li><a href="arch_decisions.html">arch_decisions</a></li></ul></div></footer>
+<script type="module">
+        if (document.querySelector('.mermaid')) {
+          var mermaid = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+          mermaid.default.initialize({ startOnLoad: true });
+        }
+    </script></body></html>
