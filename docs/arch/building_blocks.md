@@ -2,7 +2,7 @@
 
 ## Level 1 Diagram
 
-```docdustry-mermaid
+```mermaid
 graph LR
     ToDo --> More
 ```

@@ -68,6 +68,7 @@ impl Database {
         if let Ok(State::Row) = statement.next() {
             Some(statement.read("raw").unwrap())
         } else {
+            debug!("did {} not found in database", did);
             None
         }
     }

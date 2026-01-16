@@ -9,7 +9,7 @@ pub fn cmd_serve(cfg: Config) {
     let addr = "0.0.0.0:8081";
     println!("Start webserver at http://{}", addr);
     rouille::start_server(addr, move |request| {
-        info!("Request: {:?}", request);
+        debug!("serve {:?}", request);
         if request.method() != "GET" {
             return Response::empty_404();
         }
@@ -419,7 +419,7 @@ fn gen_codeblock(language: &str, html: &mut String, parser: &mut Parser, db: &Da
             escape_html(&mut *html, &text).unwrap();
             html.push_str(&"</code></pre></details>\n");
         }
-        "docdustry-mermaid" => {
+        "mermaid" => {
             let text = skip_codeblock(parser);
             html.push_str(&"<pre class=\"mermaid\">");
             html.push_str(&text);

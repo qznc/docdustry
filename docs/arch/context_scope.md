@@ -4,7 +4,7 @@
 
 Docdustry is a documentation generation system that processes structured documentation with support for templates, includes, and cross-references.
 
-```docdustry-mermaid
+```mermaid
 graph LR
     devs[👤 Developers]
     users[👤 Users]
@@ -32,7 +32,7 @@ It compiles everything into an SQLite database which can be moved around.
 It serves the documentation from SQLite as a webserver.
 As a command line tool it may work with multiple SQLite files.
 
-```docdustry-mermaid
+```mermaid
 graph LR
     inputs@{ shape: docs, label: "📄 Files" }
     browser[Web Browser]

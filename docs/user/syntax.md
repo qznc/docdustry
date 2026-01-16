@@ -31,10 +31,10 @@ If you use a document ID, the document is included.
 
 ### Mermaid Diagrams
 
-To embed [Mermaid.js](https://mermaid.js.org) diagrams, use a ``docdustry-mermaid`` codeblock.
-Use docdustry-mermaid like this:
+To embed [Mermaid.js](https://mermaid.js.org) diagrams, use a ``mermaid`` codeblock.
+Use mermaid like this:
 
-```docdustry-mermaid
+```mermaid
 ---
 title: Example Git diagram
 ---
@@ -54,7 +54,7 @@ gitGraph
 It comes from code like this:
 
 ```
-    ```docdustry-mermaid
+    ```mermaid
     ---
     title: Example Git diagram
     ---
